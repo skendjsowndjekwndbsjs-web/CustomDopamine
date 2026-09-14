@@ -440,13 +440,10 @@ __attribute__((constructor)) static void initializer(void)
 		}
 	}
 
-#ifdef __arm64e__
-	// Since pages have been modified in this process, we need to load forkfix to ensure forking will work
-	// Optimization: If the process cannot fork at all due to sandbox, we don't need to do anything
-	if (sandbox_check(getpid(), "process-fork", SANDBOX_CHECK_NO_REPORT, NULL) == 0) {
-		dlopen(JBROOT_PATH("/basebin/forkfix.dylib"), RTLD_NOW);
-	}
-#endif
+	// forkfix.dylib removed in CustomDopamine: it only ever existed to work
+	// around a fork-after-page-patching issue on arm64e (PAC). iPhone 7 Plus
+	// (A10) is plain arm64 and never hit this path upstream either, since the
+	// whole block was #ifdef __arm64e__.
 
 	if (load_executable_path() == 0) {
 		// Load rootlesshooks / watchdoghook when neccessary
