@@ -1,6 +1,6 @@
 # Bootstrap package classification — CustomDopamine (iPhone 7 Plus / A10 / iOS 15.8.5)
 
-Source of the 68-package base set: `Procursus/Makefile`, `bootstrap::` target (see Phase 1 analysis, §4). This is *already* the minimal set Procursus itself ships as "the bootstrap" — it is not "everything in Sileo," so almost all of it is KEEP by default. The table below calls out the handful that are genuinely optional or need runtime verification on your device rather than pretending every line needs individual justification it doesn't have.
+Source of the 71-package base set: `Procursus/Makefile`, `bootstrap::` target (see Phase 1 analysis, §4). This is *already* the minimal set Procursus itself ships as "the bootstrap" — it is not "everything in Sileo," so almost all of it is KEEP by default. The table below calls out the handful that are genuinely optional or need runtime verification on your device rather than pretending every line needs individual justification it doesn't have.
 
 | Package | Class | Why |
 |---|---|---|
