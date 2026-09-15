@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include "BufferedStream.h"
 #include "MemoryStream.h"
 
@@ -21,7 +22,7 @@ static int buffered_stream_read(MemoryStream *stream, uint64_t offset, size_t si
 {
     BufferedStreamContext *context = stream->context;
     if ((offset + size) > context->subBufferSize) {
-        printf("Error: cannot read %zx bytes at %llx, maximum is %zx.\n", size, offset, context->subBufferSize);
+        printf("Error: cannot read %zx bytes at %" PRIx64 ", maximum is %zx.\n", size, offset, context->subBufferSize);
         return -1;
     }
 
@@ -37,7 +38,7 @@ static int buffered_stream_write(MemoryStream *stream, uint64_t offset, size_t s
     bool needsExpand = (offset + size) > context->subBufferSize;
 
     if (needsExpand && !expandAllowed) {
-        printf("Error: cannot write %zx bytes at %llx, maximum is %zx.\n", size, offset, context->subBufferSize);
+        printf("Error: cannot write %zx bytes at %" PRIx64 ", maximum is %zx.\n", size, offset, context->subBufferSize);
         return -1;
     }
 

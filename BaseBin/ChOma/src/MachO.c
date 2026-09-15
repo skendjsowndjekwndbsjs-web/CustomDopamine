@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include "Fat.h"
 #include "FileStream.h"
 #include "MachO.h"
@@ -456,17 +457,17 @@ int macho_enumerate_dependencies(MachO *macho, void (^enumeratorBlock)(const cha
             struct dylib_command *dylibCommand = (struct dylib_command *)cmd;
             DYLIB_COMMAND_APPLY_BYTE_ORDER(dylibCommand, LITTLE_TO_HOST_APPLIER);
             if (dylibCommand->dylib.name.offset >= loadCommand.cmdsize || dylibCommand->dylib.name.offset < sizeof(struct dylib_command)) {
-                printf("WARNING: Malformed dependency at 0x%llx (Name offset out of bounds)\n", offset);
+                printf("WARNING: Malformed dependency at 0x%" PRIx64 " (Name offset out of bounds)\n", offset);
                 return;
             }
             char *dependencyPath = ((char *)cmd + dylibCommand->dylib.name.offset);
             size_t dependencyLength = strnlen(dependencyPath, loadCommand.cmdsize - dylibCommand->dylib.name.offset);
             if (!dependencyLength) {
-                printf("WARNING: Malformed dependency at 0x%llx (Name has zero length)\n", offset);
+                printf("WARNING: Malformed dependency at 0x%" PRIx64 " (Name has zero length)\n", offset);
                 return;
             }
             if (dependencyPath[dependencyLength] != 0) {
-                printf("WARNING: Malformed dependency at 0x%llx (Name has non NULL end byte)\n", offset);
+                printf("WARNING: Malformed dependency at 0x%" PRIx64 " (Name has non NULL end byte)\n", offset);
                 return;
             }
 
@@ -489,18 +490,18 @@ int macho_enumerate_rpaths(MachO *macho, void (^enumeratorBlock)(const char *rpa
             RPATH_COMMAND_APPLY_BYTE_ORDER(rpathCommand, LITTLE_TO_HOST_APPLIER);
 
             if (rpathCommand->path.offset >= loadCommand.cmdsize || rpathCommand->path.offset < sizeof(struct rpath_command)) {
-                printf("WARNING: Malformed rpath at 0x%llx (Path offset out of bounds)\n", offset);
+                printf("WARNING: Malformed rpath at 0x%" PRIx64 " (Path offset out of bounds)\n", offset);
                 return;
             }
 
             char *rpath = ((char *)cmd) + rpathCommand->path.offset;
             size_t rpathLength = strnlen(rpath, rpathCommand->cmdsize - rpathCommand->path.offset);
             if (!rpathLength) {
-                printf("WARNING: Malformed rpath at 0x%llx (Path has zero length)\n", offset);
+                printf("WARNING: Malformed rpath at 0x%" PRIx64 " (Path has zero length)\n", offset);
                 return;
             }
             if (rpath[rpathLength] != 0) {
-                printf("WARNING: Malformed rpath at 0x%llx (Name has non NULL end byte)\n", offset);
+                printf("WARNING: Malformed rpath at 0x%" PRIx64 " (Name has non NULL end byte)\n", offset);
                 return;
             }
 

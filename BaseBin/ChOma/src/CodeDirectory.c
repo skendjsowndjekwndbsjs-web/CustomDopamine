@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include "CodeDirectory.h"
 #include "CSBlob.h"
 #include "Util.h"
@@ -435,7 +436,7 @@ int csd_code_directory_print_content(CS_DecodedBlob *codeDirBlob, MachO *macho, 
         if (printSlots || verifySlots) {
             // Print the slot number
             needsNewline = true;
-            printf("%s%lld: ", i < 0 ? "" : " ",  i);
+            printf("%s%" PRId64 ": ", i < 0 ? "" : " ",  i);
 
             print_hash(slotHash, codeDir.hashSize);
 
