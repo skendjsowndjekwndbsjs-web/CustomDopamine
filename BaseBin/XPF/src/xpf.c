@@ -459,20 +459,18 @@ PFSection *xpf_txm_pfsec_init(const char *segName, const char *sectName)
 
 int xpf_load_img4(const char *path, void **outBuf, size_t *outSize)
 {
-	FHANDLE fd = img4_reopen(file_open(path, O_RDONLY), NULL, 0);
-	if (!fd) return -1;
-
-	unsigned char *buf = 0;
-	size_t sz = 0;
-	int r = fd->ioctl(fd, IOCTL_MEM_GET_DATAPTR, &buf, &sz);
-	if (r == 0 && outBuf && outSize) {
-		*outSize = sz;
-		*outBuf = malloc(sz);
-		memcpy(*outBuf, buf, sz);
-	}
-
-	fd->close(fd);
-	return r;
+	// CustomDopamine: stubbed out. This is only ever called for loading
+	// SPTM/TXM firmware images (see call sites below, gated on
+	// optSptmPath/optTxmPath) -- SPTM/TXM is an A17+/iOS 17+ concept that
+	// does not exist on iPhone 7 Plus (A10) / iOS 15.8.5, so those call
+	// sites never fire on this device. Rather than vendor Apple's private
+	// libvfs/IMG4 headers for functionality this target can never reach,
+	// this always reports "not available", matching what would happen if
+	// optSptmPath/optTxmPath were NULL to begin with.
+	(void)path;
+	(void)outBuf;
+	(void)outSize;
+	return -1;
 }
 
 int xpf_start_with_kernel_path(const char *kernelPath, const char *optSptmPath, const char *optTxmPath)
