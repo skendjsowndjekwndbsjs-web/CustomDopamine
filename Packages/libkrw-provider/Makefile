@@ -1,7 +1,7 @@
 TARGET = libkrw-dopamine.dylib
 CC = clang
 
-CFLAGS = -I../../BaseBin/.include -Isrc -isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -target arm64-apple-ios15.0 -target arm64-apple-ios15.0e -miphoneos-version-min=15.0 -fobjc-arc -O2
+CFLAGS = -I../../BaseBin/.include -Isrc -isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -target arm64-apple-ios15.0 -miphoneos-version-min=15.0 -fobjc-arc -O2
 LDFLAGS = -dynamiclib -rpath /var/jb/usr/lib -L../../BaseBin/.build -ljailbreak
 
 all: $(TARGET) sign
