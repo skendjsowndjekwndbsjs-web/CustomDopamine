@@ -192,37 +192,20 @@ NSString *const bootstrapErrorDomain = @"BootstrapErrorDomain";
 
 - (NSString *)bootstrapVersion
 {
-    uint64_t cfver = (((uint64_t)kCFCoreFoundationVersionNumber / 100) * 100);
-    if (cfver >= 2000) {
-        return @"1900";
-    }
-    return [NSString stringWithFormat:@"%llu", cfver];
+    // CustomDopamine: single-target build for iPhone 7 Plus / A10 / iOS 15.8.5.
+    // Upstream computes this dynamically from kCFCoreFoundationVersionNumber
+    // to pick between bootstrap_1800.tar.zst (iOS 15.x) and bootstrap_1900.tar.zst
+    // (iOS 16+, cfver >= 2000). iOS 15.8.5's cfver falls well under 2000, so this
+    // always resolved to "1800" on this device anyway — hardcoded here so only
+    // one bootstrap tarball (~ours, not upstream's) needs to be embedded at all.
+    return @"1800";
 }
 
-- (NSURL *)bootstrapURL
-{
-    return [NSURL URLWithString:[NSString stringWithFormat:@"https://apt.procurs.us/bootstraps/%@/bootstrap-ssh-iphoneos-arm64.tar.zst", [self bootstrapVersion]]];
-}
-
-/*- (void)downloadBootstrapWithCompletion:(void (^)(NSString *path, NSError *error))completion
-{
-    NSURL *bootstrapURL = [self bootstrapURL];
-    if (!bootstrapURL) {
-        completion(nil, [NSError errorWithDomain:bootstrapErrorDomain code:BootstrapErrorCodeFailedToGetURL userInfo:@{NSLocalizedDescriptionKey : @"Failed to obtain bootstrap URL"}]);
-        return;
-    }
-    
-    _downloadCompletionBlock = ^(NSURL * _Nullable location, NSError * _Nullable error) {
-        NSError *ourError;
-        if (error) {
-            ourError = [NSError errorWithDomain:bootstrapErrorDomain code:BootstrapErrorCodeFailedToDownload userInfo:@{NSLocalizedDescriptionKey : [NSString stringWithFormat:@"Failed to download bootstrap: %@", error.localizedDescription]}];
-        }
-        completion(location.path, ourError);
-    };
-    
-    _bootstrapDownloadTask = [_urlSession downloadTaskWithURL:bootstrapURL];
-    [_bootstrapDownloadTask resume];
-}*/
+// bootstrapURL / downloadBootstrapWithCompletion removed in CustomDopamine.
+// Upstream kept this as dead (commented-out) code pointing at apt.procurs.us;
+// we don't want even a vestigial reference to an external repo URL — the live
+// path (prepareBootstrapWithCompletion, below) only ever reads
+// bootstrap_1800.tar.zst bundled inside the app.
 
 - (void)extractBootstrap:(NSString *)path withCompletion:(void (^)(NSError *))completion
 {
