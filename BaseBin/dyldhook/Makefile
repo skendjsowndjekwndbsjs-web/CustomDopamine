@@ -21,7 +21,7 @@ define CHECK_SELF_CONTAINED
 endef
 
 dyldhook_merge.arm64.iOS15.dylib: $(FILES) $(FILES_IOS15)
-	$(CC) -arch arm64 $(CFLAGS) -DIOS=15 $(LDFLAGS) -o $@ $^
+	$(CC) -target arm64-apple-ios15.0 $(CFLAGS) -DIOS=15 $(LDFLAGS) -o $@ $^
 	@ldid -Cadhoc -S $@
 	$(call CHECK_SELF_CONTAINED,$@)
 

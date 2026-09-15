@@ -17,7 +17,7 @@ INSTALL_PATH ?= /usr/local/
 ifeq ($(TARGET), ios)
 BUILD_DIR := build/ios
 OUTPUT_DIR := output/ios
-CFLAGS += -arch arm64 -isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=11.0 -fblocks
+CFLAGS += -target arm64-apple-ios11.0 -isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=11.0 -fblocks
 ifeq ($(DISABLE_SIGNING), 0)
 CFLAGS += external/ios/libcrypto.a
 endif

@@ -2,7 +2,7 @@ TARGET = jbctl
 
 CC = clang
 
-CFLAGS = -framework Foundation -framework CoreServices -framework Security -I../.include -I./src -isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -arch arm64 -Wno-availability -miphoneos-version-min=15.0 -fobjc-arc -D BUILD_STANDALONE=$(BUILD_STANDALONE)
+CFLAGS = -framework Foundation -framework CoreServices -framework Security -I../.include -I./src -isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -target arm64-apple-ios15.0 -Wno-availability -miphoneos-version-min=15.0 -fobjc-arc -D BUILD_STANDALONE=$(BUILD_STANDALONE)
 LDFLAGS = -L../.build -ljailbreak -lchoma
 
 sign: $(TARGET)

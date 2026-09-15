@@ -4,7 +4,7 @@ TARGET = hookd
 
 CC = clang
 
-CFLAGS = -I../.include -I./src -DHOOKD_SKIP_CALLER_VERIFICATION=$(HOOKD_SKIP_CALLER_VERIFICATION) -isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -arch arm64 -Wno-availability -miphoneos-version-min=15.0 -D BUILD_STANDALONE=$(BUILD_STANDALONE) 
+CFLAGS = -I../.include -I./src -DHOOKD_SKIP_CALLER_VERIFICATION=$(HOOKD_SKIP_CALLER_VERIFICATION) -isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -target arm64-apple-ios15.0 -Wno-availability -miphoneos-version-min=15.0 -D BUILD_STANDALONE=$(BUILD_STANDALONE) 
 LDFLAGS = -lbsm
 
 sign: $(TARGET)
