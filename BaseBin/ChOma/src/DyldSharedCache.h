@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef DYLD_SHARED_CACHE_H
 #define DYLD_SHARED_CACHE_H
 

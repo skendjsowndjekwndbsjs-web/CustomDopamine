@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef BUFFERED_STREAM_H
 #define BUFFERED_STREAM_H
 

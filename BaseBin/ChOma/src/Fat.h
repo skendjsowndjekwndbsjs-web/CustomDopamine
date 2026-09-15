@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef MACHO_H
 #define MACHO_H
 

@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef __XPC_SESSION_H__
 #define __XPC_SESSION_H__
 

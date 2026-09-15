@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef SYSTEMHOOK_PRIVATE
 #define SYSTEMHOOK_PRIVATE
 

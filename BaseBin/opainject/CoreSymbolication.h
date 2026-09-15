@@ -1,3 +1,4 @@
+#include <stdint.h>
 //
 //  CoreSymbolication.h
 //

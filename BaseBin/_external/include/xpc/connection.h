@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef __XPC_CONNECTION_H__
 #define __XPC_CONNECTION_H__
 

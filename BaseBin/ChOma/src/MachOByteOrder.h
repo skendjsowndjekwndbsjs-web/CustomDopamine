@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef MACHO_BYTE_ORDER_H
 #define MACHO_BYTE_ORDER_H
 

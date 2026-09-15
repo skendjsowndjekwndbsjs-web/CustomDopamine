@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef LJB_UTIL_H
 #define LJB_UTIL_H
 

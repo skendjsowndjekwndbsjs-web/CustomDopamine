@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef MACHO_SLICE_H
 #define MACHO_SLICE_H
 

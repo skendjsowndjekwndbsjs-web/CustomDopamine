@@ -1,3 +1,4 @@
+#include <stdint.h>
 /*
  * Copyright (c) 2009-2019 Apple Inc. All rights reserved.
  *

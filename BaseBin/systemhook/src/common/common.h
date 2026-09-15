@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <spawn.h>
 #include <xpc/xpc.h>

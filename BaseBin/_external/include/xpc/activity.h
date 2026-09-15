@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef __XPC_ACTIVITY_H__
 #define __XPC_ACTIVITY_H__
 

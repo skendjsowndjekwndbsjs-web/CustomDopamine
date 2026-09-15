@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef arm64_h
 #define arm64_h
 

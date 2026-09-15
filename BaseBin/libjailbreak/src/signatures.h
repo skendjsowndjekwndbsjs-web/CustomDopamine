@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef SIGNATURES_H
 #define SIGNATURES_H
 

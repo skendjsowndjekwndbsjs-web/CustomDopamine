@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef MACHO_LOAD_COMMAND_H
 #define MACHO_LOAD_COMMAND_H
 
