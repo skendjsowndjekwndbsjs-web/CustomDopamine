@@ -13,8 +13,6 @@
 #include "common.h"
 #include "bad_recovery.h"
 
-#include <libvfs/vfs.h>
-
 bool xpf_supported_always(void)
 {
 	return true;
