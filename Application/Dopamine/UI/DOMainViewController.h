@@ -12,6 +12,7 @@
 #import "DOActionMenuView.h"
 #import "DOCreditsViewController.h"
 #import "DOSettingsController.h"
+#import "DOPackageManagerController.h"
 #import "DOJailbreakButton.h"
 
 NS_ASSUME_NONNULL_BEGIN

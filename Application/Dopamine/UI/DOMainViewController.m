@@ -91,6 +91,9 @@
         [UIAction actionWithTitle:DOLocalizedString(@"Menu_Settings_Title") image:[UIImage systemImageNamed:@"gearshape" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"settings" handler:^(__kindof UIAction * _Nonnull action) {
             [self.navigationController pushViewController:[[DOSettingsController alloc] init] animated:YES];
         }],
+        [UIAction actionWithTitle:@"Packages" image:[UIImage systemImageNamed:@"shippingbox" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"packages" handler:^(__kindof UIAction * _Nonnull action) {
+            [self.navigationController pushViewController:[[DOPackageManagerController alloc] init] animated:YES];
+        }],
         [UIAction actionWithTitle:DOLocalizedString(@"Menu_Restart_SpringBoard_Title") image:[UIImage systemImageNamed:@"arrow.clockwise" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"respring" handler:^(__kindof UIAction * _Nonnull action) {
             [self fadeToBlack:^{
                 [[DOEnvironmentManager sharedManager] respring];
