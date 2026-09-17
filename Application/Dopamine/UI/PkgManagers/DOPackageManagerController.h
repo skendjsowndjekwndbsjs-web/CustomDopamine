@@ -3,16 +3,20 @@
 //  Dopamine
 //
 //  CustomDopamine: the package-manager screen that replaces the
-//  Sileo/Zebra bridge. Lists installed packages (via DOPackageManager,
-//  which reads dpkg's own status file) and lets you install a local
-//  .deb or remove an installed one.
+//  Sileo/Zebra bridge. Built on DOPSListController -- the same base
+//  class DOSettingsController and DOCreditsViewController use -- so it
+//  presents exactly the way every other screen in this app does,
+//  instead of the plain UITableViewController this started as.
 //
 
 #import <UIKit/UIKit.h>
+#import <Preferences/PSListController.h>
+#import <Preferences/PSSpecifier.h>
+#import "DOPSListController.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface DOPackageManagerController : UITableViewController <UIDocumentPickerDelegate>
+@interface DOPackageManagerController : DOPSListController <UIDocumentPickerDelegate>
 
 @end
 
