@@ -188,5 +188,36 @@ int jbctl_handle_internal(const char *command, int argc, char* argv[])
 		}
 		return -1;
 	}
+	else if (!strcmp(command, "install_app")) {
+		// argv[1] = extracted Payload/*.app sitting in the calling app's
+		// sandbox tmp dir, argv[2] = final JBROOT_PATH(/Applications/...)
+		// destination DOAppManager already resolved (reusing an existing
+		// folder name on update, so this doubles as upgrade-in-place).
+		if (argc > 2) {
+			const char *sourcePath = argv[1];
+			const char *targetPath = argv[2];
+
+			// Ignore the result -- fine if nothing was there yet.
+			exec_cmd(JBROOT_PATH("/usr/bin/rm"), "-rf", targetPath, NULL);
+
+			int r = exec_cmd(JBROOT_PATH("/usr/bin/mv"), sourcePath, targetPath, NULL);
+			if (r != 0) return r;
+
+			// installd normally owns app bundles as mobile:mobile.
+			r = exec_cmd(JBROOT_PATH("/usr/bin/chown"), "-R", "mobile:mobile", targetPath, NULL);
+			if (r != 0) return r;
+
+			return exec_cmd(JBROOT_PATH("/usr/bin/uicache"), "-a", NULL);
+		}
+		return -1;
+	}
+	else if (!strcmp(command, "remove_app")) {
+		if (argc > 1) {
+			const char *targetPath = argv[1];
+			exec_cmd(JBROOT_PATH("/usr/bin/uicache"), "-u", targetPath, NULL);
+			return exec_cmd(JBROOT_PATH("/usr/bin/rm"), "-rf", targetPath, NULL);
+		}
+		return -1;
+	}
 	return -1;
 }
