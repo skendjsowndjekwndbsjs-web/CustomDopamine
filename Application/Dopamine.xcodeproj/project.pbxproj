@@ -979,6 +979,8 @@
 				04C246AD2B74ACA200E17924 /* DOAppSwitch.m */,
 				2AB68AE5DB9F09351B8B8D40 /* DOPackageManagerController.h */,
 				17BCB69DC866D6EC5955A2CC /* DOPackageManagerController.m */,
+				07B0E0C9861946A3A19F8224 /* DOInstallIPAController.h */,
+				E3733685AC064A83BBB439D4 /* DOInstallIPAController.m */,
 			);
 			path = PkgManagers;
 			sourceTree = "<group>";
@@ -1053,8 +1055,6 @@
 				8C029F452B4DFD910071DE58 /* DOBootstrapper.m */,
 				E3E1F3737B032450A0F66BFF /* DOPackageManager.h */,
 				4B08665CBF85E1F4624AEAAF /* DOPackageManager.m */,
-				07B0E0C9861946A3A19F8224 /* DOInstallIPAController.h */,
-				E3733685AC064A83BBB439D4 /* DOInstallIPAController.m */,
 				FC7AD13300794016B6B9123A /* DOAppManager.h */,
 				432AFC99EDF8410AA384E8AA /* DOAppManager.m */,
 				8614E355301AB63E00B1B88C /* DOBootstrapper+zstd.h */,
