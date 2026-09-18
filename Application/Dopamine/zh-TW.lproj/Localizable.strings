@@ -1,4 +1,3 @@
-"Credits_Made_By" = "由 opa334 開發，ElleKit 由 évelyne 開發";
 
 // Log
 "Status_Title_Jailbreaking" = "正在越獄";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "設定";
 "Menu_Restart_SpringBoard_Title" = "重新啟動 SpringBoard";
 "Menu_Reboot_Userspace_Title" = "重新啟動使用者空間";
-"Menu_Credits_Title" = "致謝";
 
 // Updating
 "Button_Update" = "更新";
@@ -50,7 +48,6 @@
 "Button_Hide_Jailbreak" = "隱藏越獄";
 "Button_Unhide_Jailbreak" = "取消隱藏越獄";
 "Button_Refresh_Jailbreak_Apps" = "重新整理越獄應用程式";
-"Button_Reinstall_Package_Managers" = "重新安裝套件管理器";
 "Button_Change_Mobile_Password" = "更改「mobile」密碼";
 
 // Settings Hints
@@ -105,7 +102,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "授權條款";
 "Credits_Button_Source_Code" = "原始碼";
 
 // Logs
@@ -126,6 +122,4 @@
 "Bypassing SPTM (%@)" = "正在繞過 SPTM 防護 (%@)";
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "選擇套件管理器";
-"Select_Package_Managers_Install_Message" = "如果不確定該選哪一個，請選擇 Sileo";
 "Continue" = "繼續";

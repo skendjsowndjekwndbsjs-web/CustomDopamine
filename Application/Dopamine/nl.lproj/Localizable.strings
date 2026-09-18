@@ -1,4 +1,3 @@
-"Credits_Made_By" = "Gemaakt door opa334, évelyne";
 
 // Log
 "Status_Title_Jailbreaking" = "Aan het jailbreaken";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "Instellingen";
 "Menu_Restart_SpringBoard_Title" = "SpringBoard herstarten";
 "Menu_Reboot_Userspace_Title" = "Userspace herstarten";
-"Menu_Credits_Title" = "Credits";
 
 // Updating
 "Button_Update" = "Update";
@@ -48,7 +46,6 @@
 "Button_Hide_Jailbreak" = "Jailbreak verbergen";
 "Button_Unhide_Jailbreak" = "Jailbreak tonen";
 /*Button_Refresh_Jailbreak_Apps*/
-"Button_Reinstall_Package_Managers" = "Reinstall Package Managers";
 /*Button_Change_Mobile_Password*/
 
 // Settings Hints
@@ -98,7 +95,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "Licentie";
 "Credits_Button_Source_Code" = "Broncode";
 
 // Logs
@@ -119,7 +115,5 @@
 /*Bypassing SPTM (%@)*/
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "Selecteer Package Manager(s)";
-"Select_Package_Managers_Install_Message" = "Als u niet zeker weet welke u moet selecteren, selecteer dan Sileo";
 "Continue" = "Doorgaan";
 

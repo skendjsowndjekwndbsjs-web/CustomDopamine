@@ -37,7 +37,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isSupported;
 - (BOOL)isArm64e;
 - (BOOL)isSPTM;
-- (NSString *)versionSupportString;
 - (NSString *)accessibleKernelPath;
 - (NSString *)accessibleSPTMPath;
 - (NSString *)accessibleTXMPath;
@@ -76,7 +75,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSError *)prepareBootstrap;
 - (NSError *)finalizeBootstrap;
 - (NSError *)deleteBootstrap;
-- (NSError *)reinstallPackageManagers;
 - (NSError *)updateBootLogo;
 @end
 

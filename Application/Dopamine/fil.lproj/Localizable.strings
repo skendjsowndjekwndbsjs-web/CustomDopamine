@@ -1,4 +1,3 @@
-"Credits_Made_By" = "Ginawa ito ni opa334 at évelyne";
 
 // Log
 "Status_Title_Jailbreaking" = "Jailbreaking";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "Opsiyon";
 "Menu_Restart_SpringBoard_Title" = "i-Restart ang SpringBoard";
 "Menu_Reboot_Userspace_Title" = "i-Reboot ang Userspace";
-"Menu_Credits_Title" = "Mga Kredito";
 
 // Updating
 "Button_Update" = "i-Update";
@@ -48,7 +46,6 @@
 "Button_Hide_Jailbreak" = "Itago ang Jailbreak";
 "Button_Unhide_Jailbreak" = "Ihinto ang pag-tatago ng Jailbreak";
 "Button_Refresh_Jailbreak_Apps" = "i-Refresh ang mga Apps ng Jailbreak";
-"Button_Reinstall_Package_Managers" = "i-Reinstall ang mga Package Managers";
 /*Button_Change_Mobile_Password*/
 
 // Settings Hints
@@ -98,7 +95,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "Lisensya";
 "Credits_Button_Source_Code" = "Source Code";
 
 // Logs
@@ -119,7 +115,5 @@
 "Bypassing SPTM (%@)" = "Bina-Bypass ang SPTM (%@)";
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "Pumili ng mga Package Manager(s)";
-"Select_Package_Managers_Install_Message" = "Kung hindi ka sigurado kung alin ang pipiliin, piliin ang Sileo";
 "Continue" = "Magpatuloy";
 

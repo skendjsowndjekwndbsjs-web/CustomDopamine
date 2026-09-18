@@ -38,12 +38,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString*)getLatestReleaseTag;
 - (NSArray *)getUpdatesInRange:(NSString *)start end:(NSString *)end;
 - (bool)launchedReleaseNeedsManualUpdate;
-- (NSArray*)availablePackageManagers;
-- (NSArray*)enabledPackageManagerKeys;
-- (NSArray*)enabledPackageManagers;
-- (void)resetPackageManagers;
 - (void)resetSettings;
-- (void)setPackageManager:(NSString*)key enabled:(BOOL)enabled;
 - (NSString *)localizedStringForKey:(NSString*)key;
 - (UIImage *)renderBootLogo;
 

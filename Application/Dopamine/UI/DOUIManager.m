@@ -130,67 +130,10 @@
     return [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
 }
 
-- (NSArray*)availablePackageManagers
-{
-    NSString *path = [[NSBundle mainBundle] pathForResource:@"PkgManagers" ofType:@"plist"];
-    return [NSArray arrayWithContentsOfFile:path];
-}
-
-- (NSArray*)enabledPackageManagerKeys
-{
-    NSArray *enabledPkgManagers = [_preferenceManager preferenceValueForKey:@"enabledPkgManagers"] ?: @[];
-    NSMutableArray *enabledKeys = [NSMutableArray new];
-    NSArray *availablePkgManagers = [self availablePackageManagers];
-
-    [availablePkgManagers enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSString *key = obj[@"Key"];
-        if ([enabledPkgManagers containsObject:key]) {
-            [enabledKeys addObject:key];
-        }
-    }];
-
-    return enabledKeys;
-}
-
-- (NSArray*)enabledPackageManagers
-{
-    NSMutableArray *enabledPkgManagers = [NSMutableArray new];
-    NSArray *enabledKeys = [self enabledPackageManagerKeys];
-
-    [[self availablePackageManagers] enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSString *key = obj[@"Key"];
-        if ([enabledKeys containsObject:key]) {
-            [enabledPkgManagers addObject:obj];
-        }
-    }];
-
-    return enabledPkgManagers;
-}
-
-- (void)resetPackageManagers
-{
-    [_preferenceManager removePreferenceValueForKey:@"enabledPkgManagers"];
-}
-
 - (void)resetSettings
 {
     [_preferenceManager removePreferenceValueForKey:@"verboseLogsEnabled"];
     [_preferenceManager removePreferenceValueForKey:@"tweakInjectionEnabled"];
-    [self resetPackageManagers];
-}
-
-- (void)setPackageManager:(NSString*)key enabled:(BOOL)enabled
-{
-    NSMutableArray *pkgManagers = [self enabledPackageManagerKeys].mutableCopy;
-    
-    if (enabled && ![pkgManagers containsObject:key]) {
-        [pkgManagers addObject:key];
-    }
-    else if (!enabled && [pkgManagers containsObject:key]) {
-        [pkgManagers removeObject:key];
-    }
-
-    [_preferenceManager setPreferenceValue:pkgManagers forKey:@"enabledPkgManagers"];
 }
 
 - (BOOL)isDebug

@@ -50,6 +50,13 @@
         if (!identifier || !version) continue;
         if (status && ![status containsString:@"installed"]) continue;
 
+        // dpkg also carries synthetic "gsc.*" entries (gsc = generic system
+        // capability) that represent hardware features -- bluetooth, camera
+        // flash, wifi, device housing colour, etc -- for dependency
+        // resolution. They're not real installable jailbreak packages, so
+        // don't show them in the package manager.
+        if ([identifier.lowercaseString hasPrefix:@"gsc."]) continue;
+
         DOPackageInfo *info = [DOPackageInfo new];
         info.identifier = identifier;
         info.version = version;

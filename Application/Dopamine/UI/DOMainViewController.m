@@ -74,10 +74,7 @@
     }
 
     //Header
-    DOHeaderView *headerView = [[DOHeaderView alloc] initWithImage: [UIImage imageNamed:@"Dopamine"] subtitles: @[
-        [DOGlobalAppearance mainSubtitleString:[[DOEnvironmentManager sharedManager] versionSupportString]],
-        [DOGlobalAppearance secondarySubtitleString:DOLocalizedString(@"Credits_Made_By")],
-    ]];
+    DOHeaderView *headerView = [[DOHeaderView alloc] initWithImage: [UIImage imageNamed:@"Dopamine"] subtitles: @[]];
     
     [stackView addArrangedSubview:headerView];
 
@@ -103,9 +100,6 @@
             [self fadeToBlack:^{
                 [[DOEnvironmentManager sharedManager] rebootUserspace];
             }];
-        }],
-        [UIAction actionWithTitle:DOLocalizedString(@"Menu_Credits_Title") image:[UIImage systemImageNamed:@"info.circle" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"credits" handler:^(__kindof UIAction * _Nonnull action) {
-            [self.navigationController pushViewController:[[DOCreditsViewController alloc] init] animated:YES];
         }]
     ] delegate:self];
     

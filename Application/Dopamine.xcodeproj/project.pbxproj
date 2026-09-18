@@ -7,13 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		040622AA2B77FE8E00393AAD /* DOPkgManagerPickerViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 040622A92B77FE8E00393AAD /* DOPkgManagerPickerViewController.m */; };
 		C5B51E1AF3E9641F50138E84 /* DOPackageManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 4B08665CBF85E1F4624AEAAF /* DOPackageManager.m */; };
 		132DA9EE44C1FA9E5AD8EF2E /* DOPackageManagerController.m in Sources */ = {isa = PBXBuildFile; fileRef = 17BCB69DC866D6EC5955A2CC /* DOPackageManagerController.m */; };
-		042479A22B66916B0082581B /* DOCreditsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0424796B2B66916B0082581B /* DOCreditsViewController.m */; };
 		042479A32B66916B0082581B /* DOSettingsController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0424796C2B66916B0082581B /* DOSettingsController.m */; };
-		042479A42B66916B0082581B /* Credits.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0424796F2B66916B0082581B /* Credits.plist */; };
-		042479A52B66916B0082581B /* DOCreditsCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 042479732B66916B0082581B /* DOCreditsCell.m */; };
 		042479A62B66916B0082581B /* DOHeaderCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 042479752B66916B0082581B /* DOHeaderCell.m */; };
 		042479A72B66916B0082581B /* DOButtonCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 042479772B66916B0082581B /* DOButtonCell.m */; };
 		042479A82B66916B0082581B /* DOPSListController.m in Sources */ = {isa = PBXBuildFile; fileRef = 042479782B66916B0082581B /* DOPSListController.m */; };
@@ -40,9 +36,6 @@
 		04C2469D2B73220400E17924 /* DOUpdateCircleView.m in Sources */ = {isa = PBXBuildFile; fileRef = 04C246992B73220400E17924 /* DOUpdateCircleView.m */; };
 		04C246A12B73225800E17924 /* DODownloadViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 04C246A02B73225800E17924 /* DODownloadViewController.m */; };
 		04C246AE2B74ACA200E17924 /* DOAppSwitch.m in Sources */ = {isa = PBXBuildFile; fileRef = 04C246AD2B74ACA200E17924 /* DOAppSwitch.m */; };
-		04C246B12B74B05800E17924 /* DOPkgManagerPickerView.m in Sources */ = {isa = PBXBuildFile; fileRef = 04C246B02B74B05800E17924 /* DOPkgManagerPickerView.m */; };
-		04C246B32B74B65900E17924 /* PkgManagers.plist in Resources */ = {isa = PBXBuildFile; fileRef = 04C246B22B74B65900E17924 /* PkgManagers.plist */; };
-		04DD0B352B7BA38C0055DE4F /* DOLicenseViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 04DD0B342B7BA38C0055DE4F /* DOLicenseViewController.m */; };
 		04DD0B372B7BA6180055DE4F /* LICENSE.md in Resources */ = {isa = PBXBuildFile; fileRef = 04DD0B362B7BA6180055DE4F /* LICENSE.md */; };
 		04DD0B3A2B7BF3E80055DE4F /* LICENSE_libc.md in Resources */ = {isa = PBXBuildFile; fileRef = 04DD0B392B7BF3E80055DE4F /* LICENSE_libc.md */; };
 		04DD0B3D2B7C88210055DE4F /* DOLogCrashViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 04DD0B3C2B7C88210055DE4F /* DOLogCrashViewController.m */; };
@@ -135,7 +128,6 @@
 		8C4ABEB62B52094100B43C9B /* libjailbreak.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CDD08422B4F6DD800A32B61 /* libjailbreak.dylib */; };
 		8C4ABEB92B520E7B00B43C9B /* libjailbreak.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8CDD08422B4F6DD800A32B61 /* libjailbreak.dylib */; platformFilter = ios; };
 		8C4ABEBE2B52274300B43C9B /* DOPreferenceManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 8C4ABEBD2B52274300B43C9B /* DOPreferenceManager.m */; };
-		8C512B912B5C9F9100C6F14A /* sileo.deb in Resources */ = {isa = PBXBuildFile; fileRef = 8C512B8B2B5C9DE800C6F14A /* sileo.deb */; };
 		8C56D4BF2B7C0DF2001C03D3 /* LICENSE_ChOma.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4B82B7C0DF2001C03D3 /* LICENSE_ChOma.md */; };
 		8C56D4C02B7C0DF2001C03D3 /* LICENSE_Fugu15_Rootful.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4B92B7C0DF2001C03D3 /* LICENSE_Fugu15_Rootful.md */; };
 		8C56D4C12B7C0DF2001C03D3 /* LICENSE_dimentio.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4BA2B7C0DF2001C03D3 /* LICENSE_dimentio.md */; };
@@ -143,7 +135,6 @@
 		8C56D4C32B7C0DF2001C03D3 /* LICENSE_ElleKit.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4BC2B7C0DF2001C03D3 /* LICENSE_ElleKit.md */; };
 		8C56D4C42B7C0DF2001C03D3 /* LICENSE_XPF.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4BD2B7C0DF2001C03D3 /* LICENSE_XPF.md */; };
 		8C56D4C52B7C0DF2001C03D3 /* LICENSE_opainject.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4BE2B7C0DF2001C03D3 /* LICENSE_opainject.md */; };
-		8C56D4C92B7C102B001C03D3 /* LICENSE_Sileo.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4C62B7C102B001C03D3 /* LICENSE_Sileo.md */; };
 		8C56D4CA2B7C102B001C03D3 /* LICENSE_Procursus.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4C72B7C102B001C03D3 /* LICENSE_Procursus.md */; };
 		8C56D4CB2B7C102B001C03D3 /* LICENSE_Zebra.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4C82B7C102B001C03D3 /* LICENSE_Zebra.md */; };
 		8C56D4CD2B7C118B001C03D3 /* LICENSE_kfd.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4CC2B7C118B001C03D3 /* LICENSE_kfd.md */; };
@@ -387,24 +378,17 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		040622A82B77FE8E00393AAD /* DOPkgManagerPickerViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOPkgManagerPickerViewController.h; sourceTree = "<group>"; };
-		040622A92B77FE8E00393AAD /* DOPkgManagerPickerViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOPkgManagerPickerViewController.m; sourceTree = "<group>"; };
 		E3E1F3737B032450A0F66BFF /* DOPackageManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOPackageManager.h; sourceTree = "<group>"; };
 		4B08665CBF85E1F4624AEAAF /* DOPackageManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOPackageManager.m; sourceTree = "<group>"; };
 		2AB68AE5DB9F09351B8B8D40 /* DOPackageManagerController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOPackageManagerController.h; sourceTree = "<group>"; };
 		17BCB69DC866D6EC5955A2CC /* DOPackageManagerController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOPackageManagerController.m; sourceTree = "<group>"; };
 		042479682B66916B0082581B /* DOJailbreakButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOJailbreakButton.h; sourceTree = "<group>"; };
-		0424796B2B66916B0082581B /* DOCreditsViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOCreditsViewController.m; sourceTree = "<group>"; };
 		0424796C2B66916B0082581B /* DOSettingsController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOSettingsController.m; sourceTree = "<group>"; };
 		0424796D2B66916B0082581B /* DOPSListController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOPSListController.h; sourceTree = "<group>"; };
-		0424796E2B66916B0082581B /* DOCreditsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOCreditsViewController.h; sourceTree = "<group>"; };
-		0424796F2B66916B0082581B /* Credits.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Credits.plist; sourceTree = "<group>"; };
 		042479702B66916B0082581B /* DOSettingsController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOSettingsController.h; sourceTree = "<group>"; };
 		042479722B66916B0082581B /* DOHeaderCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOHeaderCell.h; sourceTree = "<group>"; };
-		042479732B66916B0082581B /* DOCreditsCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOCreditsCell.m; sourceTree = "<group>"; };
 		042479742B66916B0082581B /* DOButtonCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOButtonCell.h; sourceTree = "<group>"; };
 		042479752B66916B0082581B /* DOHeaderCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOHeaderCell.m; sourceTree = "<group>"; };
-		042479762B66916B0082581B /* DOCreditsCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOCreditsCell.h; sourceTree = "<group>"; };
 		042479772B66916B0082581B /* DOButtonCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOButtonCell.m; sourceTree = "<group>"; };
 		042479782B66916B0082581B /* DOPSListController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DOPSListController.m; sourceTree = "<group>"; };
 		0424797A2B66916B0082581B /* DOModalTransitionPush.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DOModalTransitionPush.h; sourceTree = "<group>"; };
@@ -475,11 +459,6 @@
 		04C246A02B73225800E17924 /* DODownloadViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DODownloadViewController.m; sourceTree = "<group>"; };
 		04C246AC2B74ACA200E17924 /* DOAppSwitch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOAppSwitch.h; sourceTree = "<group>"; };
 		04C246AD2B74ACA200E17924 /* DOAppSwitch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOAppSwitch.m; sourceTree = "<group>"; };
-		04C246AF2B74B05800E17924 /* DOPkgManagerPickerView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOPkgManagerPickerView.h; sourceTree = "<group>"; };
-		04C246B02B74B05800E17924 /* DOPkgManagerPickerView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOPkgManagerPickerView.m; sourceTree = "<group>"; };
-		04C246B22B74B65900E17924 /* PkgManagers.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PkgManagers.plist; sourceTree = "<group>"; };
-		04DD0B332B7BA38C0055DE4F /* DOLicenseViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOLicenseViewController.h; sourceTree = "<group>"; };
-		04DD0B342B7BA38C0055DE4F /* DOLicenseViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOLicenseViewController.m; sourceTree = "<group>"; };
 		04DD0B362B7BA6180055DE4F /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
 		04DD0B392B7BF3E80055DE4F /* LICENSE_libc.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_libc.md; sourceTree = "<group>"; };
 		04DD0B3B2B7C88210055DE4F /* DOLogCrashViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOLogCrashViewController.h; sourceTree = "<group>"; };
@@ -581,7 +560,6 @@
 		8C46D7202B588875002899DB /* zdict.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zdict.h; sourceTree = "<group>"; };
 		8C4ABEBC2B52274300B43C9B /* DOPreferenceManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOPreferenceManager.h; sourceTree = "<group>"; };
 		8C4ABEBD2B52274300B43C9B /* DOPreferenceManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOPreferenceManager.m; sourceTree = "<group>"; };
-		8C512B8B2B5C9DE800C6F14A /* sileo.deb */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = sileo.deb; sourceTree = "<group>"; };
 		8C56D4B82B7C0DF2001C03D3 /* LICENSE_ChOma.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_ChOma.md; sourceTree = "<group>"; };
 		8C56D4B92B7C0DF2001C03D3 /* LICENSE_Fugu15_Rootful.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_Fugu15_Rootful.md; sourceTree = "<group>"; };
 		8C56D4BA2B7C0DF2001C03D3 /* LICENSE_dimentio.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_dimentio.md; sourceTree = "<group>"; };
@@ -589,7 +567,6 @@
 		8C56D4BC2B7C0DF2001C03D3 /* LICENSE_ElleKit.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_ElleKit.md; sourceTree = "<group>"; };
 		8C56D4BD2B7C0DF2001C03D3 /* LICENSE_XPF.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_XPF.md; sourceTree = "<group>"; };
 		8C56D4BE2B7C0DF2001C03D3 /* LICENSE_opainject.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_opainject.md; sourceTree = "<group>"; };
-		8C56D4C62B7C102B001C03D3 /* LICENSE_Sileo.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_Sileo.md; sourceTree = "<group>"; };
 		8C56D4C72B7C102B001C03D3 /* LICENSE_Procursus.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_Procursus.md; sourceTree = "<group>"; };
 		8C56D4C82B7C102B001C03D3 /* LICENSE_Zebra.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_Zebra.md; sourceTree = "<group>"; };
 		8C56D4CC2B7C118B001C03D3 /* LICENSE_kfd.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_kfd.md; sourceTree = "<group>"; };
@@ -888,13 +865,8 @@
 			children = (
 				0443A9AE2B79D9A40014C933 /* PSLists */,
 				042479712B66916B0082581B /* Specifiers */,
-				0424796F2B66916B0082581B /* Credits.plist */,
-				0424796E2B66916B0082581B /* DOCreditsViewController.h */,
-				0424796B2B66916B0082581B /* DOCreditsViewController.m */,
 				042479702B66916B0082581B /* DOSettingsController.h */,
 				0424796C2B66916B0082581B /* DOSettingsController.m */,
-				04DD0B332B7BA38C0055DE4F /* DOLicenseViewController.h */,
-				04DD0B342B7BA38C0055DE4F /* DOLicenseViewController.m */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -904,8 +876,6 @@
 			children = (
 				042479722B66916B0082581B /* DOHeaderCell.h */,
 				042479752B66916B0082581B /* DOHeaderCell.m */,
-				042479762B66916B0082581B /* DOCreditsCell.h */,
-				042479732B66916B0082581B /* DOCreditsCell.m */,
 				042479742B66916B0082581B /* DOButtonCell.h */,
 				042479772B66916B0082581B /* DOButtonCell.m */,
 			);
@@ -1001,13 +971,8 @@
 			children = (
 				04C246AC2B74ACA200E17924 /* DOAppSwitch.h */,
 				04C246AD2B74ACA200E17924 /* DOAppSwitch.m */,
-				04C246AF2B74B05800E17924 /* DOPkgManagerPickerView.h */,
-				04C246B02B74B05800E17924 /* DOPkgManagerPickerView.m */,
-				040622A82B77FE8E00393AAD /* DOPkgManagerPickerViewController.h */,
-				040622A92B77FE8E00393AAD /* DOPkgManagerPickerViewController.m */,
 				2AB68AE5DB9F09351B8B8D40 /* DOPackageManagerController.h */,
 				17BCB69DC866D6EC5955A2CC /* DOPackageManagerController.m */,
-				04C246B22B74B65900E17924 /* PkgManagers.plist */,
 			);
 			path = PkgManagers;
 			sourceTree = "<group>";
@@ -1421,7 +1386,6 @@
 				8C05C59E2B759F8A0097A931 /* bootstrap_1800.tar.zst */,
 				8CB94F032B59E17A0098BAFD /* basebin.tar */,
 				8CB94F022B59E17A0098BAFD /* basebin.tc */,
-				8C512B8B2B5C9DE800C6F14A /* sileo.deb */,
 				8C609C992C19AC250023DD12 /* libkrw-dopamine.deb */,
 				8CCD8A832B6F165A004B72B0 /* libroot.deb */,
 				8CCD2FC32B77AA9200F9C5DA /* basebin-link.deb */,
@@ -1437,7 +1401,6 @@
 				8C56D4BE2B7C0DF2001C03D3 /* LICENSE_opainject.md */,
 				8C56D4BD2B7C0DF2001C03D3 /* LICENSE_XPF.md */,
 				8C56D4C72B7C102B001C03D3 /* LICENSE_Procursus.md */,
-				8C56D4C62B7C102B001C03D3 /* LICENSE_Sileo.md */,
 				8C56D4C82B7C102B001C03D3 /* LICENSE_Zebra.md */,
 				8C56D4CC2B7C118B001C03D3 /* LICENSE_kfd.md */,
 				8C5FA9702BDD81EF008C246F /* LICENSE_weightBufs.md */,
@@ -1992,7 +1955,6 @@
 				8C56D4BF2B7C0DF2001C03D3 /* LICENSE_ChOma.md in Resources */,
 				8C56D4C22B7C0DF2001C03D3 /* LICENSE_Fugu15.md in Resources */,
 				8C56D4C02B7C0DF2001C03D3 /* LICENSE_Fugu15_Rootful.md in Resources */,
-				8C56D4C92B7C102B001C03D3 /* LICENSE_Sileo.md in Resources */,
 				8C56D4C12B7C0DF2001C03D3 /* LICENSE_dimentio.md in Resources */,
 				8C56D4C32B7C0DF2001C03D3 /* LICENSE_ElleKit.md in Resources */,
 				8C56D4C52B7C0DF2001C03D3 /* LICENSE_opainject.md in Resources */,
@@ -2001,15 +1963,12 @@
 				8C56D4CA2B7C102B001C03D3 /* LICENSE_Procursus.md in Resources */,
 				8CCD2FC42B77AAA000F9C5DA /* basebin-link.deb in Resources */,
 				8C05C59F2B75A1770097A931 /* bootstrap_1800.tar.zst in Resources */,
-				042479A42B66916B0082581B /* Credits.plist in Resources */,
 				8C2875212BD850B4008B24DA /* LICENSE_libgrabkernel2.md in Resources */,
-				8C512B912B5C9F9100C6F14A /* sileo.deb in Resources */,
 				8CCD8A882B6F16D0004B72B0 /* libroot.deb in Resources */,
 				8C296BAE2BE05914007C2AD1 /* LICENSE_plooshinit.md in Resources */,
 				8C5FA9712BDD81EF008C246F /* LICENSE_weightBufs.md in Resources */,
 				8CB94F052B59E17A0098BAFD /* basebin.tar in Resources */,
 				04DD0B592B7D19E60055DE4F /* Localizable.strings in Resources */,
-				04C246B32B74B65900E17924 /* PkgManagers.plist in Resources */,
 				04DD0B402B7CBD3D0055DE4F /* Themes.plist in Resources */,
 				8CB94F042B59E17A0098BAFD /* basebin.tc in Resources */,
 				8C7198282ABF0E84003C6658 /* LaunchScreen.storyboard in Resources */,
@@ -2281,13 +2240,11 @@
 				8C609C9E2C19B4270023DD12 /* NSString+Version.m in Sources */,
 				042479A62B66916B0082581B /* DOHeaderCell.m in Sources */,
 				8C6599DD2C555A71000FF57F /* DOPSJetsamListItemsController.h in Sources */,
-				042479A22B66916B0082581B /* DOCreditsViewController.m in Sources */,
 				042479B32B66916B0082581B /* DODebugLogView.m in Sources */,
 				042479AF2B66916B0082581B /* DONavigationController.m in Sources */,
 				04C246AE2B74ACA200E17924 /* DOAppSwitch.m in Sources */,
 				8C6599DB2C555A60000FF57F /* DOPSJetsamListItemsController.m in Sources */,
 				042479B22B66916B0082581B /* DOLyricsLogView.m in Sources */,
-				042479A52B66916B0082581B /* DOCreditsCell.m in Sources */,
 				8C296BAC2BE049E4007C2AD1 /* DOPSExploitListItemsController.m in Sources */,
 				042479B82B66916B0082581B /* DOMainViewController.m in Sources */,
 				8C029F432B4DFD5D0071DE58 /* DOExploitManager.m in Sources */,
@@ -2303,7 +2260,6 @@
 				8C71981A2ABF0E82003C6658 /* DOAppDelegate.m in Sources */,
 				042479B72B66916B0082581B /* DOActionMenuView.m in Sources */,
 				8C029F632B4E2E140071DE58 /* DOJailbreaker.m in Sources */,
-				040622AA2B77FE8E00393AAD /* DOPkgManagerPickerViewController.m in Sources */,
 				C5B51E1AF3E9641F50138E84 /* DOPackageManager.m in Sources */,
 				132DA9EE44C1FA9E5AD8EF2E /* DOPackageManagerController.m in Sources */,
 				042479A82B66916B0082581B /* DOPSListController.m in Sources */,
@@ -2315,7 +2271,6 @@
 				042479AD2B66916B0082581B /* DOHeaderView.m in Sources */,
 				042479AB2B66916B0082581B /* DOModalTransitionScale.m in Sources */,
 				2F11A325301BFE9200C1C9F0 /* momentarius.c in Sources */,
-				04DD0B352B7BA38C0055DE4F /* DOLicenseViewController.m in Sources */,
 				042479AA2B66916B0082581B /* DOModalTransitionPush.m in Sources */,
 				8CB4087D301FFB130097E18B /* clock_alarm.c in Sources */,
 				0443A9B12B79D9C10014C933 /* DOPSListItemsController.m in Sources */,
@@ -2327,7 +2282,6 @@
 				042479B52B66916B0082581B /* DOLyricsLogItemView.m in Sources */,
 				8C029F4E2B4E1FF30071DE58 /* DOExploit.m in Sources */,
 				04C2469D2B73220400E17924 /* DOUpdateCircleView.m in Sources */,
-				04C246B12B74B05800E17924 /* DOPkgManagerPickerView.m in Sources */,
 				042479B42B66916B0082581B /* DOProgressiveBlurView.m in Sources */,
 				04C2469C2B73220400E17924 /* DOUpdateViewController.m in Sources */,
 				042479B62B66916B0082581B /* DOActionMenuButton.m in Sources */,

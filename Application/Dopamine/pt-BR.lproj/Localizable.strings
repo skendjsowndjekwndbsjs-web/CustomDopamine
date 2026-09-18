@@ -1,4 +1,3 @@
-"Credits_Made_By" = "Desenvolvido por opa334, évelyne";
 
 // Log
 "Status_Title_Jailbreaking" = "Executando o Jailbreak";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "Configurações";
 "Menu_Restart_SpringBoard_Title" = "Reiniciar SpringBoard";
 "Menu_Reboot_Userspace_Title" = "Reiniciar 'Userspace'";
-"Menu_Credits_Title" = "Créditos";
 
 // Updating
 "Button_Update" = "Atualizar";
@@ -48,7 +46,6 @@
 "Button_Hide_Jailbreak" = "Ocultar o Jailbreak";
 "Button_Unhide_Jailbreak" = "Deixar de ocultar o Jailbreak";
 /*Button_Refresh_Jailbreak_Apps*/
-"Button_Reinstall_Package_Managers" = "Reinstalar Gerenciadores de Pacotes";
 /*Button_Change_Mobile_Password*/
 
 // Settings Hints
@@ -91,7 +88,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "Licenças";
 "Credits_Button_Source_Code" = "Código-Fonte";
 
 // Logs
@@ -112,7 +108,5 @@
 /*Bypassing SPTM (%@)*/
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "Escolha o(s) Gerenciador(es) de Pacotes";
-"Select_Package_Managers_Install_Message" = "Se estiver em dúvida, selecione o Sileo";
 "Continue" = "Continuar";
 

@@ -1,4 +1,3 @@
-"Credits_Made_By" = "por opa334, ElleKit por évelyne";
 
 // Registro
 "Status_Title_Jailbreaking" = "Realizando jailbreak";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "Ajustes";
 "Menu_Restart_SpringBoard_Title" = "Reiniciar SpringBoard";
 "Menu_Reboot_Userspace_Title" = "Reiniciar espacio de usuario";
-"Menu_Credits_Title" = "Créditos";
 
 // Actualización
 "Button_Update" = "Actualizar";
@@ -50,7 +48,6 @@
 "Button_Hide_Jailbreak" = "Ocultar jailbreak";
 "Button_Unhide_Jailbreak" = "Dejar de ocultar jailbreak";
 "Button_Refresh_Jailbreak_Apps" = "Actualizar apps de jailbreak";
-"Button_Reinstall_Package_Managers" = "Reinstalar gestores de paquetes";
 "Button_Change_Mobile_Password" = "Cambiar contraseña de \"mobile\"";
 
 // Sugerencias de ajustes
@@ -105,7 +102,6 @@
 
 // Créditos
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "Licencias";
 "Credits_Button_Source_Code" = "Código fuente";
 
 // Registros
@@ -126,6 +122,4 @@
 "Bypassing SPTM (%@)" = "Sorteando SPTM (%@)";
 
 // Selección de gestor de paquetes
-"Status_Title_Select_Package_Managers" = "Selecciona gestor(es) de paquetes";
-"Select_Package_Managers_Install_Message" = "Si no estás seguro de cuál elegir, selecciona Sileo";
 "Continue" = "Continuar";

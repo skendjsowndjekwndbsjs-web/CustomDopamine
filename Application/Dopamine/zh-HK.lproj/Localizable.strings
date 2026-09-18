@@ -1,4 +1,3 @@
-"Credits_Made_By" = "作者：opa334, évelyne";
 
 // Log
 "Status_Title_Jailbreaking" = "正在越獄";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "設置";
 "Menu_Restart_SpringBoard_Title" = "註銷";
 "Menu_Reboot_Userspace_Title" = "用戶空間重啟";
-"Menu_Credits_Title" = "關於";
 
 // Updating
 "Button_Update" = "更新";
@@ -48,7 +46,6 @@
 "Button_Hide_Jailbreak" = "隱藏越獄";
 "Button_Unhide_Jailbreak" = "解除隱藏越獄";
 /*Button_Refresh_Jailbreak_Apps*/
-"Button_Reinstall_Package_Managers" = "重新安裝包管理器（越獄商店）";
 /*Button_Change_Mobile_Password*/
 
 // Settings Hints
@@ -98,7 +95,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "許可證";
 "Credits_Button_Source_Code" = "原始碼";
 
 // Logs
@@ -119,7 +115,5 @@
 /*Bypassing SPTM (%@)*/
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "選定包管理器（越獄商店）";
-"Select_Package_Managers_Install_Message" = "若不確定如何選擇，請使用 Sileo";
 "Continue" = "繼續";
 

@@ -53,8 +53,6 @@
     topPadding += 35;
     
     [self setupLog: topPadding];
-    [self setupPackageManagerPicker: topPadding];
-    
     [NSLayoutConstraint deactivateConstraints:constraints];
 
 
@@ -76,11 +74,8 @@
         [self setupTitle];
     });
 
-    if ([[DOUIManager sharedInstance] enabledPackageManagerKeys].count > 0)
-    {
-        //we can start, unlock the mutex
-        [self unlockMutex];
-    }
+    //no package-manager picker anymore, package management lives in-app; unlock right away
+    [self unlockMutex];
 
 }
 
@@ -104,38 +99,6 @@
         [self.logView.topAnchor constraintEqualToAnchor:window.topAnchor constant:topPadding],
         [self.logView.bottomAnchor constraintEqualToAnchor:window.bottomAnchor constant:0]
     ]];
-
-    [window layoutIfNeeded];
-}
-
-- (void)setupPackageManagerPicker: (float)topPadding
-{
-    UIWindow *window = [[UIApplication sharedApplication] keyWindow];
-
-    if ([[DOUIManager sharedInstance] enabledPackageManagerKeys].count > 0)
-        return;
-
-    self.pkgManagerPickerView = [[DOPkgManagerPickerView alloc] initWithCallback:^(BOOL success) {
-        [self.pkgManagerPickerView removeFromSuperview];
-        self.logView.hidden = NO;
-        [self unlockMutex];
-    }];
-
-    self.pkgManagerPickerView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.pkgManagerPickerView.alpha = 0.0;
-
-    [self addSubview:self.pkgManagerPickerView];
-
-    [NSLayoutConstraint activateConstraints:@[
-       [self.pkgManagerPickerView.leadingAnchor constraintEqualToAnchor:window.leadingAnchor],
-       [self.pkgManagerPickerView.trailingAnchor constraintEqualToAnchor:window.trailingAnchor],
-       [self.pkgManagerPickerView.topAnchor constraintEqualToAnchor:window.topAnchor constant:topPadding],
-       [self.pkgManagerPickerView.bottomAnchor constraintEqualToAnchor:window.bottomAnchor constant:0]
-    ]];
-    
-    [UIView animateWithDuration:0.25 delay:0.25 options: UIViewAnimationOptionCurveEaseInOut animations:^{
-        self.pkgManagerPickerView.alpha = 1.0;
-    } completion:nil];
 
     [window layoutIfNeeded];
 }

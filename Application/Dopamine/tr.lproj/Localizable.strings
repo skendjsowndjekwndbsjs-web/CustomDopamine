@@ -1,4 +1,3 @@
-"Credits_Made_By" = "opa334 ve évelyne tarafından yapılmıştır";
 
 // Log
 "Status_Title_Jailbreaking" = "Jailbreak Yapılıyor";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "Ayarlar";
 "Menu_Restart_SpringBoard_Title" = "Springboard'u Yeniden Başlat";
 "Menu_Reboot_Userspace_Title" = "Userspace'i Yeniden Başlat";
-"Menu_Credits_Title" = "Hakkında";
 
 // Updating
 "Button_Update" = "Güncelle";
@@ -48,7 +46,6 @@
 "Button_Hide_Jailbreak" = "Jailbreak'i Sakla";
 "Button_Unhide_Jailbreak" = "Jailbreak'i Göster";
 /*Button_Refresh_Jailbreak_Apps*/
-"Button_Reinstall_Package_Managers" = "Reinstall Package Managers";
 /*Button_Change_Mobile_Password*/
 
 // Settings Hints
@@ -98,7 +95,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "Lisans";
 "Credits_Button_Source_Code" = "Kaynak Kodu";
 
 // Logs
@@ -119,7 +115,5 @@
 /*Bypassing SPTM (%@)*/
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "Paket Yöneticisi Seçin";
-"Select_Package_Managers_Install_Message" = "If you are unsure which one to select, select Sileo";
 "Continue" = "Continue";
 

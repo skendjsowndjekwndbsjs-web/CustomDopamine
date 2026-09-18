@@ -10,7 +10,6 @@
 #import <Photos/Photos.h>
 #import <libjailbreak/util.h>
 #import "DOUIManager.h"
-#import "DOPkgManagerPickerViewController.h"
 #import "DOHeaderCell.h"
 #import "DOEnvironmentManager.h"
 #import "DOExploitManager.h"
@@ -293,17 +292,6 @@
                     [changeMobilePasswordSpecifier setProperty:@"key" forKey:@"image"];
                     [changeMobilePasswordSpecifier setProperty:@"changeMobilePasswordWithAuthenticationPressed" forKey:@"action"];
                     [specifiers addObject:changeMobilePasswordSpecifier];
-                    
-                    PSSpecifier *reinstallPackageManagersSpecifier = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:defSetter get:defGetter detail:nil cell:PSStaticTextCell edit:nil];
-                    [reinstallPackageManagersSpecifier setProperty:@"Button_Reinstall_Package_Managers" forKey:@"title"];
-                    [reinstallPackageManagersSpecifier setProperty:[DOButtonCell class] forKey:@"cellClass"];
-                    [reinstallPackageManagersSpecifier setProperty:buttonHeight forKey:@"height"];
-                    if (@available(iOS 16.0, *))
-                        [reinstallPackageManagersSpecifier setProperty:@"shippingbox.and.arrow.backward" forKey:@"image"];
-                    else
-                        [reinstallPackageManagersSpecifier setProperty:@"shippingbox" forKey:@"image"];
-                    [reinstallPackageManagersSpecifier setProperty:@"reinstallPackageManagersPressed" forKey:@"action"];
-                    [specifiers addObject:reinstallPackageManagersSpecifier];
                 }
 
                 BOOL hideJailbreakButtonShown = (envManager.isJailbroken || (envManager.isInstalledThroughTrollStore && !envManager.isJailbreakHidden));
@@ -646,11 +634,6 @@
 - (void)refreshJailbreakAppsPressed
 {
     [[DOEnvironmentManager sharedManager] refreshJailbreakApps];
-}
-
-- (void)reinstallPackageManagersPressed
-{
-    [self.navigationController pushViewController:[[DOPkgManagerPickerViewController alloc] init] animated:YES];
 }
 
 - (void)changeMobilePasswordWithAuthenticationPressed

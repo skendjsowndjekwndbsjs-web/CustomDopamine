@@ -1,4 +1,3 @@
-"Credits_Made_By" = "by opa334, ElleKit by évelyne";
 
 // Log
 "Status_Title_Jailbreaking" = "Jailbreaking";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "設定";
 "Menu_Restart_SpringBoard_Title" = "SpringBoardを再起動";
 "Menu_Reboot_Userspace_Title" = "Userspaceを再起動";
-"Menu_Credits_Title" = "クレジット";
 
 // Updating
 "Button_Update" = "アップデート";
@@ -49,7 +47,6 @@
 "Button_Hide_Jailbreak" = "Jailbreakを隠す";
 "Button_Unhide_Jailbreak" = "Jailbreak環境を戻す";
 "Button_Refresh_Jailbreak_Apps" = "Jailbreakアプリを更新 (UICache)";
-"Button_Reinstall_Package_Managers" = "パッケージマネージャーを再インストール";
 "Button_Change_Mobile_Password" = "\"mobile\"のパスワードを変更";
 
 // Settings Hints
@@ -104,7 +101,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "ライセンス";
 "Credits_Button_Source_Code" = "ソースコード";
 
 // Logs
@@ -125,7 +121,5 @@
 "Bypassing SPTM (%@)" = "Bypassing SPTM (%@)";
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "パッケージマネージャーを選択";
-"Select_Package_Managers_Install_Message" = "どちらを選択するか迷った場合は、Sileoを選択することをおすすめします。";
 "Continue" = "続行";
 

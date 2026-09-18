@@ -1,4 +1,3 @@
-"Credits_Made_By" = "by opa334, ElleKit by évelyne";
 
 // Log
 "Status_Title_Jailbreaking" = "กำลังเจลเบรค";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "ตั้งค่า";
 "Menu_Restart_SpringBoard_Title" = "รีสตาร์ท SpringBoard";
 "Menu_Reboot_Userspace_Title" = "รีบูต Userspace";
-"Menu_Credits_Title" = "Credits";
 
 // Updating
 "Button_Update" = "อัปเดต";
@@ -48,7 +46,6 @@
 "Button_Hide_Jailbreak" = "ซ่อนเจลเบรค";
 "Button_Unhide_Jailbreak" = "เลิกซ่อนเจลเบรค";
 "Button_Refresh_Jailbreak_Apps" = "รีเฟรช Jailbreak Apps";
-"Button_Reinstall_Package_Managers" = "ติดตั้ง Package Managers ใหม่";
 /*Button_Change_Mobile_Password*/
 
 // Settings Hints
@@ -98,7 +95,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "Licenses";
 "Credits_Button_Source_Code" = "Source Code";
 
 // Logs
@@ -119,7 +115,5 @@
 "Bypassing SPTM (%@)" = "Bypassing SPTM (%@)";
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "เลือก Package Manager(s) ที่ต้องการ";
-"Select_Package_Managers_Install_Message" = "ถ้าไม่แน่ใจว่าจะเลือกอันไหน ให้เลือก Sileo";
 "Continue" = "ดำเนินการต่อ";
 

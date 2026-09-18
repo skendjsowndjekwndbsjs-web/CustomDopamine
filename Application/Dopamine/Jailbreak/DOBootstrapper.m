@@ -489,20 +489,6 @@ NSString *const bootstrapErrorDomain = @"BootstrapErrorDomain";
     return nil;
 }
 
-- (NSError *)installPackageManagers
-{
-    NSArray *enabledPackageManagers = [[DOUIManager sharedInstance] enabledPackageManagers];
-    for (NSDictionary *packageManagerDict in enabledPackageManagers) {
-        NSString *path = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:packageManagerDict[@"Package"]];
-        NSString *name = packageManagerDict[@"Display Name"];
-        int r = [self installPackage:path];
-        if (r != 0) {
-            return [NSError errorWithDomain:bootstrapErrorDomain code:BootstrapErrorCodeFailedFinalising userInfo:@{NSLocalizedDescriptionKey : [NSString stringWithFormat:@"Failed to install %@: %d\n", name, r]}];
-        }
-    }
-    return nil;
-}
-
 - (BOOL)shouldInstallPackage:(NSString *)identifier
 {
     NSString *bundledVersion = gBundledPackages[identifier];
@@ -523,9 +509,6 @@ NSString *const bootstrapErrorDomain = @"BootstrapErrorDomain";
         if (r != 0) {
             return [NSError errorWithDomain:bootstrapErrorDomain code:BootstrapErrorCodeFailedFinalising userInfo:@{NSLocalizedDescriptionKey : [NSString stringWithFormat:@"prep_bootstrap.sh returned %d\n", r]}];
         }
-        
-        NSError *error = [self installPackageManagers];
-        if (error) return error;
     }
     
     BOOL shouldInstallLibroot = [self shouldInstallPackage:@"libroot-dopamine"];

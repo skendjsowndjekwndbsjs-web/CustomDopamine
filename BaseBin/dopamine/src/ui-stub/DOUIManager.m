@@ -27,11 +27,6 @@
 	[self sendLog:log debug:debug update:NO];
 }
 
-- (NSArray *)enabledPackageManagers
-{
-	return nil;
-}
-
 - (id)renderBootLogo
 {
     return nil;

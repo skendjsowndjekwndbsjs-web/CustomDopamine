@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)sendLog:(NSString*)log debug:(BOOL)debug update:(BOOL)update;
 - (void)sendLog:(NSString*)log debug:(BOOL)debug;
 
-- (NSArray *)enabledPackageManagers;
 - (id)renderBootLogo;
 
 @end

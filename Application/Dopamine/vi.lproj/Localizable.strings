@@ -1,4 +1,3 @@
-"Credits_Made_By" = "Được tạo bởi opa334, évelyne";
 
 // Log
 "Status_Title_Jailbreaking" = "Đang Jailbreak";
@@ -13,7 +12,6 @@
 "Menu_Settings_Title" = "Cài đặt";
 "Menu_Restart_SpringBoard_Title" = "Khởi động lại SpringBoard";
 "Menu_Reboot_Userspace_Title" = "Khởi động lại Userspace";
-"Menu_Credits_Title" = "Tác giả";
 
 // Updating
 "Button_Update" = "Cập nhật";
@@ -50,7 +48,6 @@
 "Button_Hide_Jailbreak" = "Ẩn Jailbreak";
 "Button_Unhide_Jailbreak" = "Bỏ ẩn Jailbreak";
 "Button_Refresh_Jailbreak_Apps" = "Làm mới các app Jailbreak";
-"Button_Reinstall_Package_Managers" = "Cài lại các trình quản lý gói";
 "Button_Change_Mobile_Password" = "Đổi mật khẩu \"mobile\"";
 
 // Settings Hints
@@ -101,7 +98,6 @@
 
 // Credits
 "Credits_Button_Discord" = "Discord";
-"Credits_Button_License" = "Giấy phép";
 "Credits_Button_Source_Code" = "Mã nguồn";
 
 // Logs
@@ -122,6 +118,4 @@
 "Bypassing SPTM (%@)" = "Kh.thác lỗ hổng SPTM (%@)";
 
 // Package Manager selection
-"Status_Title_Select_Package_Managers" = "Chọn trình quản lý gói";
-"Select_Package_Managers_Install_Message" = "Nếu bạn không biết nên nhấn vào lựa chọn nào, hãy chọn Sileo (sẽ không bao giờ có Cydia cho bạn chọn)";
 "Continue" = "Tiếp tục";

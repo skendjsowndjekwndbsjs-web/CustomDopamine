@@ -10,7 +10,6 @@
 #import "DOHeaderView.h"
 #import "DOGlobalAppearance.h"
 #import "DOActionMenuView.h"
-#import "DOCreditsViewController.h"
 #import "DOSettingsController.h"
 #import "DOPackageManagerController.h"
 #import "DOJailbreakButton.h"
