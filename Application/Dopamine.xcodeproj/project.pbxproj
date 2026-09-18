@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		C5B51E1AF3E9641F50138E84 /* DOPackageManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 4B08665CBF85E1F4624AEAAF /* DOPackageManager.m */; };
+		469A467B1789419587EA69AB /* DOInstallIPAController.m in Sources */ = {isa = PBXBuildFile; fileRef = E3733685AC064A83BBB439D4 /* DOInstallIPAController.m */; };
 		0021FA55FFB34090BEEE7E36 /* DOAppManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 432AFC99EDF8410AA384E8AA /* DOAppManager.m */; };
 		132DA9EE44C1FA9E5AD8EF2E /* DOPackageManagerController.m in Sources */ = {isa = PBXBuildFile; fileRef = 17BCB69DC866D6EC5955A2CC /* DOPackageManagerController.m */; };
 		042479A32B66916B0082581B /* DOSettingsController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0424796C2B66916B0082581B /* DOSettingsController.m */; };
@@ -381,6 +382,8 @@
 /* Begin PBXFileReference section */
 		E3E1F3737B032450A0F66BFF /* DOPackageManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOPackageManager.h; sourceTree = "<group>"; };
 		4B08665CBF85E1F4624AEAAF /* DOPackageManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOPackageManager.m; sourceTree = "<group>"; };
+		07B0E0C9861946A3A19F8224 /* DOInstallIPAController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOInstallIPAController.h; sourceTree = "<group>"; };
+		E3733685AC064A83BBB439D4 /* DOInstallIPAController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOInstallIPAController.m; sourceTree = "<group>"; };
 		FC7AD13300794016B6B9123A /* DOAppManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOAppManager.h; sourceTree = "<group>"; };
 		432AFC99EDF8410AA384E8AA /* DOAppManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOAppManager.m; sourceTree = "<group>"; };
 		2AB68AE5DB9F09351B8B8D40 /* DOPackageManagerController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOPackageManagerController.h; sourceTree = "<group>"; };
@@ -1050,6 +1053,8 @@
 				8C029F452B4DFD910071DE58 /* DOBootstrapper.m */,
 				E3E1F3737B032450A0F66BFF /* DOPackageManager.h */,
 				4B08665CBF85E1F4624AEAAF /* DOPackageManager.m */,
+				07B0E0C9861946A3A19F8224 /* DOInstallIPAController.h */,
+				E3733685AC064A83BBB439D4 /* DOInstallIPAController.m */,
 				FC7AD13300794016B6B9123A /* DOAppManager.h */,
 				432AFC99EDF8410AA384E8AA /* DOAppManager.m */,
 				8614E355301AB63E00B1B88C /* DOBootstrapper+zstd.h */,
@@ -2266,6 +2271,7 @@
 				042479B72B66916B0082581B /* DOActionMenuView.m in Sources */,
 				8C029F632B4E2E140071DE58 /* DOJailbreaker.m in Sources */,
 				C5B51E1AF3E9641F50138E84 /* DOPackageManager.m in Sources */,
+				469A467B1789419587EA69AB /* DOInstallIPAController.m in Sources */,
 				0021FA55FFB34090BEEE7E36 /* DOAppManager.m in Sources */,
 				132DA9EE44C1FA9E5AD8EF2E /* DOPackageManagerController.m in Sources */,
 				042479A82B66916B0082581B /* DOPSListController.m in Sources */,

@@ -91,6 +91,9 @@
         [UIAction actionWithTitle:@"Packages" image:[UIImage systemImageNamed:@"shippingbox" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"packages" handler:^(__kindof UIAction * _Nonnull action) {
             [self.navigationController pushViewController:[[DOPackageManagerController alloc] init] animated:YES];
         }],
+        [UIAction actionWithTitle:@"Install IPA" image:[UIImage systemImageNamed:@"square.and.arrow.down" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"install-ipa" handler:^(__kindof UIAction * _Nonnull action) {
+            [self.navigationController pushViewController:[[DOInstallIPAController alloc] init] animated:YES];
+        }],
         [UIAction actionWithTitle:DOLocalizedString(@"Menu_Restart_SpringBoard_Title") image:[UIImage systemImageNamed:@"arrow.clockwise" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"respring" handler:^(__kindof UIAction * _Nonnull action) {
             [self fadeToBlack:^{
                 [[DOEnvironmentManager sharedManager] respring];

@@ -5,17 +5,8 @@
 
 #import "DOPackageManagerController.h"
 #import "DOPackageManager.h"
-#import "DOAppManager.h"
 #import "DOButtonCell.h"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
-
-@interface DOPackageManagerController ()
-// documentPicker:didPickDocumentsAtURLs: is shared by both the "Install
-// Local Package…" (.deb) and "Install App…" (.ipa) buttons -- this says
-// which one is currently open so the one delegate callback knows which
-// install path to run.
-@property (nonatomic) BOOL pendingPickerIsApp;
-@end
 
 @implementation DOPackageManagerController
 
@@ -64,40 +55,6 @@
         [specifiers addObject:emptySpecifier];
     }
 
-    PSSpecifier *appsHeaderSpecifier = [PSSpecifier emptyGroupSpecifier];
-    appsHeaderSpecifier.name = @"Install IPA";
-    [specifiers addObject:appsHeaderSpecifier];
-
-    PSSpecifier *installAppSpecifier = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:defSetter get:defGetter detail:nil cell:PSStaticTextCell edit:nil];
-    [installAppSpecifier setProperty:@"Install App (.ipa)…" forKey:@"title"];
-    [installAppSpecifier setProperty:[DOButtonCell class] forKey:@"cellClass"];
-    [installAppSpecifier setProperty:buttonHeight forKey:@"height"];
-    [installAppSpecifier setProperty:@"square.and.arrow.down" forKey:@"image"];
-    [installAppSpecifier setProperty:@"installAppButtonTapped" forKey:@"action"];
-    [specifiers addObject:installAppSpecifier];
-
-    PSSpecifier *installedAppsGroupSpecifier = [PSSpecifier emptyGroupSpecifier];
-    installedAppsGroupSpecifier.name = @"Installed Apps";
-    [specifiers addObject:installedAppsGroupSpecifier];
-
-    NSArray<DOAppInfo *> *apps = [DOAppManager installedApps];
-    for (DOAppInfo *app in apps) {
-        PSSpecifier *appSpecifier = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:defSetter get:defGetter detail:nil cell:PSStaticTextCell edit:nil];
-        [appSpecifier setProperty:[NSString stringWithFormat:@"%@ (%@)", app.displayName, app.version] forKey:@"title"];
-        [appSpecifier setProperty:[DOButtonCell class] forKey:@"cellClass"];
-        [appSpecifier setProperty:buttonHeight forKey:@"height"];
-        [appSpecifier setProperty:@"app.badge" forKey:@"image"];
-        [appSpecifier setProperty:@"appRowTapped:" forKey:@"action"];
-        [appSpecifier setProperty:app.bundlePath forKey:@"customAppBundlePath"];
-        [specifiers addObject:appSpecifier];
-    }
-
-    if (apps.count == 0) {
-        PSSpecifier *emptyAppsSpecifier = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:defSetter get:defGetter detail:nil cell:PSStaticTextCell edit:nil];
-        [emptyAppsSpecifier setProperty:@"No apps installed" forKey:@"title"];
-        [specifiers addObject:emptyAppsSpecifier];
-    }
-
     _specifiers = specifiers;
     return _specifiers;
 }
@@ -124,20 +81,9 @@
 
 - (void)installButtonTapped
 {
-    _pendingPickerIsApp = NO;
     UTType *debType = [UTType typeWithFilenameExtension:@"deb"] ?: UTTypeData;
     UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc]
         initForOpeningContentTypes:@[debType]];
-    picker.delegate = self;
-    [self presentViewController:picker animated:YES completion:nil];
-}
-
-- (void)installAppButtonTapped
-{
-    _pendingPickerIsApp = YES;
-    UTType *ipaType = [UTType typeWithFilenameExtension:@"ipa"] ?: UTTypeData;
-    UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc]
-        initForOpeningContentTypes:@[ipaType]];
     picker.delegate = self;
     [self presentViewController:picker animated:YES completion:nil];
 }
@@ -146,10 +92,9 @@
 {
     if (urls.count == 0) return;
     NSURL *url = urls.firstObject;
-    BOOL isApp = _pendingPickerIsApp;
 
     BOOL accessing = [url startAccessingSecurityScopedResource];
-    NSError *installError = isApp ? [DOAppManager installIPAAtPath:url.path] : [DOPackageManager installPackageAtPath:url.path];
+    NSError *installError = [DOPackageManager installPackageAtPath:url.path];
     if (accessing) [url stopAccessingSecurityScopedResource];
 
     if (installError) {
@@ -177,33 +122,6 @@
     [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     [confirm addAction:[UIAlertAction actionWithTitle:@"Remove" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         NSError *removeError = [DOPackageManager removePackageWithIdentifier:identifier];
-        if (removeError) {
-            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Remove Failed"
-                message:removeError.localizedDescription
-                preferredStyle:UIAlertControllerStyleAlert];
-            [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-            [self presentViewController:alert animated:YES completion:nil];
-        } else {
-            self->_specifiers = nil;
-            [self reloadSpecifiers];
-        }
-    }]];
-    [self presentViewController:confirm animated:YES completion:nil];
-}
-
-#pragma mark - Remove App
-
-- (void)appRowTapped:(PSSpecifier *)specifier
-{
-    NSString *bundlePath = [specifier propertyForKey:@"customAppBundlePath"];
-    if (!bundlePath) return;
-
-    UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Remove App"
-        message:[NSString stringWithFormat:@"Remove %@?", bundlePath.lastPathComponent]
-        preferredStyle:UIAlertControllerStyleAlert];
-    [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-    [confirm addAction:[UIAlertAction actionWithTitle:@"Remove" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-        NSError *removeError = [DOAppManager removeAppAtPath:bundlePath];
         if (removeError) {
             UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Remove Failed"
                 message:removeError.localizedDescription

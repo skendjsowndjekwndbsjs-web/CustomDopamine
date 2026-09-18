@@ -12,6 +12,7 @@
 #import "DOActionMenuView.h"
 #import "DOSettingsController.h"
 #import "DOPackageManagerController.h"
+#import "DOInstallIPAController.h"
 #import "DOJailbreakButton.h"
 
 NS_ASSUME_NONNULL_BEGIN
