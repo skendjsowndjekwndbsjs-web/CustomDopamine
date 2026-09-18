@@ -65,7 +65,7 @@
     }
 
     PSSpecifier *appsHeaderSpecifier = [PSSpecifier emptyGroupSpecifier];
-    appsHeaderSpecifier.name = @"Apps";
+    appsHeaderSpecifier.name = @"Install IPA";
     [specifiers addObject:appsHeaderSpecifier];
 
     PSSpecifier *installAppSpecifier = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:defSetter get:defGetter detail:nil cell:PSStaticTextCell edit:nil];
