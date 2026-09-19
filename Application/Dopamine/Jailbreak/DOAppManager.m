@@ -11,6 +11,20 @@
 #import <Security/Security.h>
 #import <unistd.h>
 
+// The public Security.framework umbrella header on iOS doesn't declare
+// SecStaticCode/SecCode at all -- they're private-SDK only, even though the
+// symbols exist in the framework binary and Security.framework is already
+// linked. TrollStore's own Shared/TSUtil.h forward-declares the same set
+// for the same reason; ported verbatim here.
+typedef struct __SecCode const *SecStaticCodeRef;
+typedef CF_OPTIONS(uint32_t, SecCSFlags) {
+    kSecCSDefaultFlags = 0
+};
+#define kSecCSRequirementInformation (1 << 2)
+OSStatus SecStaticCodeCreateWithPathAndAttributes(CFURLRef path, SecCSFlags flags, CFDictionaryRef attributes, SecStaticCodeRef *staticCode);
+OSStatus SecCodeCopySigningInformation(SecStaticCodeRef code, SecCSFlags flags, CFDictionaryRef *information);
+extern CFStringRef kSecCodeInfoEntitlementsDict;
+
 // MobileContainerManager is a private framework with no vendored header in
 // this project (unlike CoreServices/LSApplicationWorkspace.h, which BaseBin
 // already ships) -- declared the same minimal way TrollStore's own
