@@ -11,6 +11,18 @@
 
 static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
 
+static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
+{
+    chown(path.fileSystemRepresentation, uid, gid);
+    BOOL isDir = NO;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir] && isDir) {
+        NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtPath:path];
+        for (NSString *subpath in enumerator) {
+            chown([path stringByAppendingPathComponent:subpath].fileSystemRepresentation, uid, gid);
+        }
+    }
+}
+
 @implementation DOAppInfo
 @end
 
@@ -97,41 +109,58 @@ static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
     NSString *targetPath = [JBROOT_PATH(@"/Applications") stringByAppendingPathComponent:targetFolderName];
 
     // The app's own executable (and any dylibs it embeds) need to be
-    // explicitly registered as trusted -- exec_cmd_trusted below only
-    // trusts the helper binaries (mv/chown/uicache) it runs, not this
-    // freshly-copied-in binary that nothing has ever executed or trusted
-    // before. Without this, the move can succeed and uicache can still
-    // register the icon, but tapping it on the home screen fails.
+    // explicitly registered as trusted -- trusting the helper binary run
+    // below only trusts that helper, not this freshly-copied-in binary
+    // that nothing has ever executed or trusted before. Without this,
+    // the move can succeed and uicache can still register the icon, but
+    // tapping it on the home screen fails.
     NSString *executableName = infoPlist[@"CFBundleExecutable"];
     NSString *sourceExecutablePath = executableName ? [extractedAppPath stringByAppendingPathComponent:executableName] : nil;
 
     // The move/chown/uicache step needs root. Do it in-process via
     // runAsRoot/runUnsandboxed -- the same mechanism Respring/Reboot
-    // Userspace already use -- instead of spawning /basebin/jbctl.
-    // jbctl only reaches the device through basebin.tar, which the
-    // jailbreak/bootstrap process extracts; a plain IPA reinstall does
-    // NOT redeploy it, so a jbctl-spawn approach would silently run
-    // whatever old jbctl is already on disk and never learn about a
-    // new "install_app" command. runAsRoot/runUnsandboxed instead ask
-    // the currently-running (freshly-installed) app process itself for
-    // elevated privileges, so it's always current.
+    // Userspace already use -- instead of spawning /basebin/jbctl (which
+    // only reaches the device through basebin.tar, extracted by the
+    // jailbreak/bootstrap process, so a plain IPA reinstall wouldn't
+    // redeploy it).
+    //
+    // The move and chown are done natively (NSFileManager + chown())
+    // rather than by shelling out to /usr/bin/mv & /usr/bin/chown --
+    // unlike uicache's path, which is copied from code already known to
+    // work elsewhere in this app, I had no verified bootstrap path for
+    // mv/chown and guessed wrong. Native calls have no such dependency.
     __block int result = -1;
+    __block NSString *stepThatFailed = nil;
     DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
     [envManager runAsRoot:^{
         [envManager runUnsandboxed:^{
+            NSFileManager *rootFm = [NSFileManager defaultManager];
+
             // Trust the app's own executable BEFORE moving it -- trusting
             // by path only makes sense while that exact path still exists.
             if (sourceExecutablePath) {
                 jbclient_trust_file_by_path(sourceExecutablePath.fileSystemRepresentation);
             }
 
-            // Ignore this one's result -- fine if nothing was there yet.
-            exec_cmd_trusted(JBROOT_PATH("/usr/bin/rm"), "-rf", targetPath.fileSystemRepresentation, NULL);
+            // Fine if nothing was there yet (reinstall case).
+            [rootFm removeItemAtPath:targetPath error:nil];
 
-            int r = exec_cmd_trusted(JBROOT_PATH("/usr/bin/mv"), extractedAppPath.fileSystemRepresentation, targetPath.fileSystemRepresentation, NULL);
-            if (r == 0) r = exec_cmd_trusted(JBROOT_PATH("/usr/bin/chown"), "-R", "mobile:mobile", targetPath.fileSystemRepresentation, NULL);
-            if (r == 0) r = exec_cmd_trusted(JBROOT_PATH("/usr/bin/uicache"), "-a", NULL);
-            result = r;
+            NSError *moveErr = nil;
+            if (![rootFm moveItemAtPath:extractedAppPath toPath:targetPath error:&moveErr]) {
+                stepThatFailed = [NSString stringWithFormat:@"move (%@)", moveErr.localizedDescription];
+                return;
+            }
+
+            // installd normally owns app bundles as mobile:mobile (501:501
+            // on every iOS version -- this has never changed).
+            recursiveChown(targetPath, 501, 501);
+
+            int r = exec_cmd_trusted(JBROOT_PATH("/usr/bin/uicache"), "-a", NULL);
+            if (r != 0) {
+                stepThatFailed = [NSString stringWithFormat:@"uicache (exit %d)", r];
+                return;
+            }
+            result = 0;
         }];
     }];
 
@@ -139,7 +168,7 @@ static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
 
     if (result != 0 || ![fm fileExistsAtPath:targetPath]) {
         return [NSError errorWithDomain:DOAppManagerErrorDomain code:result userInfo:@{
-            NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Install didn't complete (step exited %d). Check that ldid/trust isn't required for this binary.", result]
+            NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Install didn't complete -- failed at: %@", stepThatFailed ?: @"unknown step"]
         }];
     }
     return nil;
@@ -152,7 +181,7 @@ static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
     [envManager runAsRoot:^{
         [envManager runUnsandboxed:^{
             exec_cmd_trusted(JBROOT_PATH("/usr/bin/uicache"), "-u", bundlePath.fileSystemRepresentation, NULL);
-            result = exec_cmd_trusted(JBROOT_PATH("/usr/bin/rm"), "-rf", bundlePath.fileSystemRepresentation, NULL);
+            result = [[NSFileManager defaultManager] removeItemAtPath:bundlePath error:nil] ? 0 : -1;
         }];
     }];
 
