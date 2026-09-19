@@ -56,6 +56,38 @@ static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
     return result;
 }
 
+// Recursively finds every Mach-O binary in a bundle (main executable,
+// embedded frameworks, plugins/extensions, anything) by checking each
+// file's magic bytes, rather than guessing by extension -- trusting only
+// CFBundleExecutable is what left frameworks untrusted and made freshly
+// installed apps crash on launch.
+static void trustAllMachOsInBundle(NSString *bundlePath)
+{
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSDirectoryEnumerator<NSString *> *enumerator = [fm enumeratorAtPath:bundlePath];
+    for (NSString *relativePath in enumerator) {
+        NSString *fullPath = [bundlePath stringByAppendingPathComponent:relativePath];
+
+        NSDictionary *attrs = [fm attributesOfItemAtPath:fullPath error:nil];
+        if (![attrs[NSFileType] isEqualToString:NSFileTypeRegular]) continue;
+
+        NSFileHandle *fh = [NSFileHandle fileHandleForReadingAtPath:fullPath];
+        if (!fh) continue;
+        NSData *header = [fh readDataOfLength:4];
+        [fh closeFile];
+        if (header.length < 4) continue;
+
+        uint32_t magic;
+        memcpy(&magic, header.bytes, 4);
+        BOOL isMachO = (magic == 0xfeedface || magic == 0xcefaedfe || // 32-bit
+                         magic == 0xfeedfacf || magic == 0xcffaedfe || // 64-bit
+                         magic == 0xcafebabe || magic == 0xbebafeca);  // fat/universal
+        if (isMachO) {
+            jbclient_trust_file_by_path(fullPath.fileSystemRepresentation);
+        }
+    }
+}
+
 + (nullable NSError *)installIPAAtPath:(NSString *)path
 {
     NSFileManager *fm = [NSFileManager defaultManager];
@@ -108,15 +140,6 @@ static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
     }
     NSString *targetPath = [JBROOT_PATH(@"/Applications") stringByAppendingPathComponent:targetFolderName];
 
-    // The app's own executable (and any dylibs it embeds) need to be
-    // explicitly registered as trusted -- trusting the helper binary run
-    // below only trusts that helper, not this freshly-copied-in binary
-    // that nothing has ever executed or trusted before. Without this,
-    // the move can succeed and uicache can still register the icon, but
-    // tapping it on the home screen fails.
-    NSString *executableName = infoPlist[@"CFBundleExecutable"];
-    NSString *sourceExecutablePath = executableName ? [extractedAppPath stringByAppendingPathComponent:executableName] : nil;
-
     // The move/chown/uicache step needs root. Do it in-process via
     // runAsRoot/runUnsandboxed -- the same mechanism Respring/Reboot
     // Userspace already use -- instead of spawning /basebin/jbctl (which
@@ -136,11 +159,9 @@ static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
         [envManager runUnsandboxed:^{
             NSFileManager *rootFm = [NSFileManager defaultManager];
 
-            // Trust the app's own executable BEFORE moving it -- trusting
-            // by path only makes sense while that exact path still exists.
-            if (sourceExecutablePath) {
-                jbclient_trust_file_by_path(sourceExecutablePath.fileSystemRepresentation);
-            }
+            // Trust every Mach-O BEFORE moving -- trusting by path only
+            // makes sense while these exact paths still exist.
+            trustAllMachOsInBundle(extractedAppPath);
 
             // Fine if nothing was there yet (reinstall case).
             [rootFm removeItemAtPath:targetPath error:nil];
