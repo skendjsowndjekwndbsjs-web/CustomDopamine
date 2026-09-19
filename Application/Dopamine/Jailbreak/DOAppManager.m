@@ -26,20 +26,24 @@ OSStatus SecCodeCopySigningInformation(SecStaticCodeRef code, SecCSFlags flags, 
 extern CFStringRef kSecCodeInfoEntitlementsDict;
 
 // MobileContainerManager is a private framework with no vendored header in
-// this project (unlike CoreServices/LSApplicationWorkspace.h, which BaseBin
-// already ships) -- declared the same minimal way TrollStore's own
-// Shared/CoreServices.h does.
+// this project. Xcode's SDK doesn't ship a linkable stub for it either
+// (only Theos does, via its own vendored private-framework stubs -- which
+// is how TrollStore's own Makefile-based build links it directly), so it's
+// not linked at build time here at all: dlopen it at runtime instead and
+// resolve each class with NSClassFromString, the same way TrollStore's own
+// uicache.m already does for MCMPluginKitPluginDataContainer.
+#import <dlfcn.h>
+static void ensureMobileContainerManagerLoaded(void)
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        dlopen("/System/Library/PrivateFrameworks/MobileContainerManager.framework/MobileContainerManager", RTLD_NOW);
+    });
+}
+
 @interface MCMContainer : NSObject
 + (id)containerWithIdentifier:(id)identifier createIfNecessary:(BOOL)createIfNecessary existed:(BOOL *)existed error:(NSError **)error;
 @property (nonatomic, readonly) NSURL *url;
-@end
-@interface MCMAppDataContainer : MCMContainer
-@end
-@interface MCMSharedDataContainer : MCMContainer
-@end
-@interface MCMSystemDataContainer : MCMContainer
-@end
-@interface MCMPluginKitPluginDataContainer : MCMContainer
 @end
 
 static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
@@ -185,7 +189,7 @@ static NSDictionary *constructGroupContainersForEntitlements(NSDictionary *entit
     if (!entitlements) return nil;
 
     NSString *entitlementForGroups = systemGroups ? @"com.apple.security.system-groups" : @"com.apple.security.application-groups";
-    Class mcmClass = systemGroups ? [MCMSystemDataContainer class] : [MCMSharedDataContainer class];
+    Class mcmClass = NSClassFromString(systemGroups ? @"MCMSystemDataContainer" : @"MCMSharedDataContainer");
 
     NSArray *groupIDs = entitlements[entitlementForGroups];
     if (![groupIDs isKindOfClass:[NSArray class]]) return nil;
@@ -208,7 +212,7 @@ static NSMutableDictionary *buildBundleRegistrationDictionary(NSString *bundlePa
     NSString *dataContainerID = bundleIdentifier;
     BOOL containerized = constructContainerizationForEntitlements(entitlements, &dataContainerID);
 
-    Class containerClass = isPlugin ? NSClassFromString(@"MCMPluginKitPluginDataContainer") : [MCMAppDataContainer class];
+    Class containerClass = NSClassFromString(isPlugin ? @"MCMPluginKitPluginDataContainer" : @"MCMAppDataContainer");
     MCMContainer *dataContainer = [containerClass containerWithIdentifier:dataContainerID createIfNecessary:YES existed:nil error:nil];
     NSString *containerPath = dataContainer.url.path;
 
@@ -266,6 +270,8 @@ static NSMutableDictionary *buildBundleRegistrationDictionary(NSString *bundlePa
 // not just a plain single-binary app.
 static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString *bundleIdentifier)
 {
+    ensureMobileContainerManagerLoaded();
+
     NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[bundlePath stringByAppendingPathComponent:@"Info.plist"]];
     NSString *executablePath = [bundlePath stringByAppendingPathComponent:infoPlist[@"CFBundleExecutable"]];
 
