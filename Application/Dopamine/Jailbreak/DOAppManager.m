@@ -8,17 +8,24 @@
 #import <libjailbreak/util.h>
 #import <libjailbreak/jbclient_xpc.h>
 #import <CoreServices/LSApplicationWorkspace.h>
+#import <Security/Security.h>
 #import <unistd.h>
 
 // MobileContainerManager is a private framework with no vendored header in
 // this project (unlike CoreServices/LSApplicationWorkspace.h, which BaseBin
-// already ships) -- declared here the same minimal way TrollStore's own
-// Shared/CoreServices.h does, since that's the only part actually used.
+// already ships) -- declared the same minimal way TrollStore's own
+// Shared/CoreServices.h does.
 @interface MCMContainer : NSObject
 + (id)containerWithIdentifier:(id)identifier createIfNecessary:(BOOL)createIfNecessary existed:(BOOL *)existed error:(NSError **)error;
 @property (nonatomic, readonly) NSURL *url;
 @end
 @interface MCMAppDataContainer : MCMContainer
+@end
+@interface MCMSharedDataContainer : MCMContainer
+@end
+@interface MCMSystemDataContainer : MCMContainer
+@end
+@interface MCMPluginKitPluginDataContainer : MCMContainer
 @end
 
 static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
@@ -100,42 +107,170 @@ static void trustAllMachOsInBundle(NSString *bundlePath)
     }
 }
 
-// Builds the same registration dictionary TrollStore's own uicache
-// replacement (RootHelper/uicache.m, registerPath()) constructs before
-// calling registerApplicationDictionary: -- trimmed to the fields that
-// matter for a plain single-executable app (no App Groups, no PlugIns,
-// no entitlement-driven custom container id). Anything with those will
-// need that fuller logic ported too.
-static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString *bundleIdentifier, NSString *containerPath)
+// --- The following four helpers are ports of the same-named functions in
+// TrollStore's RootHelper/uicache.m (registerPath()). ---
+
+static NSDictionary *dumpEntitlementsFromBinaryAtPath(NSString *binaryPath)
 {
+    if (!binaryPath) return nil;
+
+    NSURL *binaryURL = [NSURL fileURLWithPath:binaryPath];
+    SecStaticCodeRef codeRef = NULL;
+    OSStatus result = SecStaticCodeCreateWithPathAndAttributes((__bridge CFURLRef)binaryURL, kSecCSDefaultFlags, NULL, &codeRef);
+    if (result != errSecSuccess || codeRef == NULL) {
+        if (codeRef) CFRelease(codeRef);
+        return nil;
+    }
+
+    CFDictionaryRef signingInfo = NULL;
+    result = SecCodeCopySigningInformation(codeRef, kSecCSRequirementInformation, &signingInfo);
+    CFRelease(codeRef);
+    if (result != errSecSuccess) return nil;
+
+    NSDictionary *entitlements = nil;
+    CFDictionaryRef entitlementsRef = CFDictionaryGetValue(signingInfo, kSecCodeInfoEntitlementsDict);
+    if (entitlementsRef && CFGetTypeID(entitlementsRef) == CFDictionaryGetTypeID()) {
+        entitlements = (__bridge NSDictionary *)entitlementsRef;
+    }
+    CFRelease(signingInfo);
+    return entitlements;
+}
+
+static BOOL constructContainerizationForEntitlements(NSDictionary *entitlements, NSString **customContainerOut)
+{
+    NSNumber *noContainer = entitlements[@"com.apple.private.security.no-container"];
+    if ([noContainer isKindOfClass:[NSNumber class]] && noContainer.boolValue) {
+        return NO;
+    }
+
+    id containerRequired = entitlements[@"com.apple.private.security.container-required"];
+    if ([containerRequired isKindOfClass:[NSNumber class]]) {
+        if (!((NSNumber *)containerRequired).boolValue) return NO;
+    } else if ([containerRequired isKindOfClass:[NSString class]]) {
+        *customContainerOut = (NSString *)containerRequired;
+    }
+
+    return YES;
+}
+
+static NSString *constructTeamIdentifierForEntitlements(NSDictionary *entitlements)
+{
+    NSString *teamIdentifier = entitlements[@"com.apple.developer.team-identifier"];
+    return [teamIdentifier isKindOfClass:[NSString class]] ? teamIdentifier : nil;
+}
+
+static NSDictionary *constructEnvironmentVariablesForContainerPath(NSString *containerPath, BOOL isContainerized)
+{
+    NSString *homeDir = isContainerized ? containerPath : @"/var/mobile";
+    NSString *tmpDir = isContainerized ? [containerPath stringByAppendingPathComponent:@"tmp"] : @"/var/tmp";
+    return @{ @"CFFIXED_USER_HOME": homeDir, @"HOME": homeDir, @"TMPDIR": tmpDir };
+}
+
+static NSDictionary *constructGroupContainersForEntitlements(NSDictionary *entitlements, BOOL systemGroups)
+{
+    if (!entitlements) return nil;
+
+    NSString *entitlementForGroups = systemGroups ? @"com.apple.security.system-groups" : @"com.apple.security.application-groups";
+    Class mcmClass = systemGroups ? [MCMSystemDataContainer class] : [MCMSharedDataContainer class];
+
+    NSArray *groupIDs = entitlements[entitlementForGroups];
+    if (![groupIDs isKindOfClass:[NSArray class]]) return nil;
+
+    NSMutableDictionary *groupContainers = [NSMutableDictionary new];
+    for (NSString *groupID in groupIDs) {
+        MCMContainer *container = [mcmClass containerWithIdentifier:groupID createIfNecessary:YES existed:nil error:nil];
+        if (container.url) groupContainers[groupID] = container.url.path;
+    }
+    return groupContainers.count ? groupContainers.copy : nil;
+}
+
+// Builds one bundle's entry (main app, or a single PlugIn) for the
+// registration dictionary -- shared logic between the two, per TrollStore's
+// own registerPath(), which duplicates this inline for app vs. plugin.
+static NSMutableDictionary *buildBundleRegistrationDictionary(NSString *bundlePath, NSString *bundleIdentifier, NSString *executablePath, BOOL isPlugin, NSString *ownerBundleID)
+{
+    NSDictionary *entitlements = dumpEntitlementsFromBinaryAtPath(executablePath);
+
+    NSString *dataContainerID = bundleIdentifier;
+    BOOL containerized = constructContainerizationForEntitlements(entitlements, &dataContainerID);
+
+    Class containerClass = isPlugin ? NSClassFromString(@"MCMPluginKitPluginDataContainer") : [MCMAppDataContainer class];
+    MCMContainer *dataContainer = [containerClass containerWithIdentifier:dataContainerID createIfNecessary:YES existed:nil error:nil];
+    NSString *containerPath = dataContainer.url.path;
+
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-    dict[@"ApplicationType"] = @"User";
+    if (entitlements) dict[@"Entitlements"] = entitlements;
+
     dict[@"CFBundleIdentifier"] = bundleIdentifier;
     dict[@"CodeInfoIdentifier"] = bundleIdentifier;
     dict[@"CompatibilityState"] = @0;
-    dict[@"IsContainerized"] = @YES;
+    dict[@"IsContainerized"] = @(containerized);
     if (containerPath) {
         dict[@"Container"] = containerPath;
-        dict[@"EnvironmentVariables"] = @{
-            @"CFFIXED_USER_HOME": containerPath,
-            @"HOME": containerPath,
-            @"TMPDIR": [containerPath stringByAppendingPathComponent:@"tmp"],
-        };
+        dict[@"EnvironmentVariables"] = constructEnvironmentVariablesForContainerPath(containerPath, containerized);
     }
-    dict[@"IsDeletable"] = @YES;
     dict[@"Path"] = bundlePath;
-    // These three plus IsAdHocSigned are what TrollStore fills in for an
-    // app that isn't really Apple-signed -- LaunchServices just records
-    // them, it doesn't re-verify the signature against them.
     dict[@"SignerOrganization"] = @"Apple Inc.";
     dict[@"SignatureVersion"] = @132352;
     dict[@"SignerIdentity"] = @"Apple iPhone OS Application Signing";
-    dict[@"IsAdHocSigned"] = @YES;
-    dict[@"LSInstallType"] = @1;
-    dict[@"HasMIDBasedSINF"] = @0;
-    dict[@"MissingSINF"] = @0;
-    dict[@"FamilyID"] = @0;
-    dict[@"IsOnDemandInstallCapable"] = @0;
+
+    if (isPlugin) {
+        dict[@"ApplicationType"] = @"PluginKitPlugin";
+        dict[@"PluginOwnerBundleID"] = ownerBundleID;
+    } else {
+        dict[@"ApplicationType"] = @"User";
+        dict[@"IsAdHocSigned"] = @YES;
+        dict[@"LSInstallType"] = @1;
+        dict[@"HasMIDBasedSINF"] = @0;
+        dict[@"MissingSINF"] = @0;
+        dict[@"FamilyID"] = @0;
+        dict[@"IsOnDemandInstallCapable"] = @0;
+        dict[@"IsDeletable"] = @YES;
+    }
+
+    NSString *teamIdentifier = constructTeamIdentifierForEntitlements(entitlements);
+    if (teamIdentifier) dict[@"TeamIdentifier"] = teamIdentifier;
+
+    NSDictionary *appGroupContainers = constructGroupContainersForEntitlements(entitlements, NO);
+    NSDictionary *systemGroupContainers = constructGroupContainersForEntitlements(entitlements, YES);
+    NSMutableDictionary *groupContainers = [NSMutableDictionary new];
+    [groupContainers addEntriesFromDictionary:appGroupContainers];
+    [groupContainers addEntriesFromDictionary:systemGroupContainers];
+    if (groupContainers.count) {
+        if (appGroupContainers.count) dict[@"HasAppGroupContainers"] = @YES;
+        if (systemGroupContainers.count) dict[@"HasSystemGroupContainers"] = @YES;
+        dict[@"GroupContainers"] = groupContainers.copy;
+    }
+
+    return dict;
+}
+
+// Full port of TrollStore's RootHelper/uicache.m registerPath(): builds the
+// main app's registration dict (via the shared helper above), then walks
+// PlugIns/*.appex and registers each one the same way, attached under
+// _LSBundlePlugins -- this is what makes extensions/widgets actually work,
+// not just a plain single-binary app.
+static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString *bundleIdentifier)
+{
+    NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[bundlePath stringByAppendingPathComponent:@"Info.plist"]];
+    NSString *executablePath = [bundlePath stringByAppendingPathComponent:infoPlist[@"CFBundleExecutable"]];
+
+    NSMutableDictionary *dict = buildBundleRegistrationDictionary(bundlePath, bundleIdentifier, executablePath, NO, nil);
+
+    NSString *pluginsPath = [bundlePath stringByAppendingPathComponent:@"PlugIns"];
+    NSMutableDictionary *bundlePlugins = [NSMutableDictionary dictionary];
+    for (NSString *pluginName in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:pluginsPath error:nil]) {
+        NSString *pluginPath = [pluginsPath stringByAppendingPathComponent:pluginName];
+        NSDictionary *pluginInfoPlist = [NSDictionary dictionaryWithContentsOfFile:[pluginPath stringByAppendingPathComponent:@"Info.plist"]];
+        NSString *pluginBundleID = pluginInfoPlist[@"CFBundleIdentifier"];
+        if (!pluginBundleID) continue;
+
+        NSString *pluginExecutablePath = [pluginPath stringByAppendingPathComponent:pluginInfoPlist[@"CFBundleExecutable"]];
+        NSMutableDictionary *pluginDict = buildBundleRegistrationDictionary(pluginPath, pluginBundleID, pluginExecutablePath, YES, bundleIdentifier);
+        bundlePlugins[pluginBundleID] = pluginDict;
+    }
+    dict[@"_LSBundlePlugins"] = bundlePlugins;
+
     return dict;
 }
 
@@ -232,15 +367,11 @@ static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString 
 
             // This is the actual mechanism TrollStore's own uicache
             // replacement uses (RootHelper/uicache.m, registerPath()) --
-            // create a real data container via MobileContainerManager,
-            // then hand LaunchServices a full registration dictionary
-            // directly, in-process. This replaces a plain `uicache -a`
-            // shell-out, which registers the .app's *existence* but does
-            // nothing to give it a sandbox container -- almost certainly
-            // why the app crashed immediately on launch: it had nowhere
-            // to put Documents/Library/tmp.
-            MCMAppDataContainer *dataContainer = [MCMAppDataContainer containerWithIdentifier:bundleIdentifier createIfNecessary:YES existed:nil error:nil];
-            NSDictionary *registrationDict = buildRegistrationDictionary(targetPath, bundleIdentifier, dataContainer.url.path);
+            // full port including entitlements-derived containerization,
+            // App/System Group containers, and PlugIns/extensions -- not
+            // just the main app. Registers directly with LaunchServices,
+            // in-process, instead of shelling out to `uicache -a`.
+            NSDictionary *registrationDict = buildRegistrationDictionary(targetPath, bundleIdentifier);
             BOOL registered = [[LSApplicationWorkspace defaultWorkspace] registerApplicationDictionary:registrationDict];
             if (!registered) {
                 stepThatFailed = @"registerApplicationDictionary";
