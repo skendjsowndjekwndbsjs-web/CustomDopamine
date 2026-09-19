@@ -4,7 +4,9 @@
 //
 
 #import "DOAppManager.h"
+#import "DOEnvironmentManager.h"
 #import <libjailbreak/util.h>
+#import <libjailbreak/jbclient_xpc.h>
 #import <unistd.h>
 
 static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
@@ -94,18 +96,50 @@ static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
     }
     NSString *targetPath = [JBROOT_PATH(@"/Applications") stringByAppendingPathComponent:targetFolderName];
 
-    // The move/chown/uicache step needs root -- hand off to jbctl the same
-    // way DOPackageManager hands dpkg -i off for non-root installs.
-    exec_cmd(JBROOT_PATH("/basebin/jbctl"), "internal", "install_app", extractedAppPath.fileSystemRepresentation, targetPath.fileSystemRepresentation, NULL);
+    // The app's own executable (and any dylibs it embeds) need to be
+    // explicitly registered as trusted -- exec_cmd_trusted below only
+    // trusts the helper binaries (mv/chown/uicache) it runs, not this
+    // freshly-copied-in binary that nothing has ever executed or trusted
+    // before. Without this, the move can succeed and uicache can still
+    // register the icon, but tapping it on the home screen fails.
+    NSString *executableName = infoPlist[@"CFBundleExecutable"];
+    NSString *sourceExecutablePath = executableName ? [extractedAppPath stringByAppendingPathComponent:executableName] : nil;
+
+    // The move/chown/uicache step needs root. Do it in-process via
+    // runAsRoot/runUnsandboxed -- the same mechanism Respring/Reboot
+    // Userspace already use -- instead of spawning /basebin/jbctl.
+    // jbctl only reaches the device through basebin.tar, which the
+    // jailbreak/bootstrap process extracts; a plain IPA reinstall does
+    // NOT redeploy it, so a jbctl-spawn approach would silently run
+    // whatever old jbctl is already on disk and never learn about a
+    // new "install_app" command. runAsRoot/runUnsandboxed instead ask
+    // the currently-running (freshly-installed) app process itself for
+    // elevated privileges, so it's always current.
+    __block int result = -1;
+    DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
+    [envManager runAsRoot:^{
+        [envManager runUnsandboxed:^{
+            // Trust the app's own executable BEFORE moving it -- trusting
+            // by path only makes sense while that exact path still exists.
+            if (sourceExecutablePath) {
+                jbclient_trust_file_by_path(sourceExecutablePath.fileSystemRepresentation);
+            }
+
+            // Ignore this one's result -- fine if nothing was there yet.
+            exec_cmd_trusted(JBROOT_PATH("/usr/bin/rm"), "-rf", targetPath.fileSystemRepresentation, NULL);
+
+            int r = exec_cmd_trusted(JBROOT_PATH("/usr/bin/mv"), extractedAppPath.fileSystemRepresentation, targetPath.fileSystemRepresentation, NULL);
+            if (r == 0) r = exec_cmd_trusted(JBROOT_PATH("/usr/bin/chown"), "-R", "mobile:mobile", targetPath.fileSystemRepresentation, NULL);
+            if (r == 0) r = exec_cmd_trusted(JBROOT_PATH("/usr/bin/uicache"), "-a", NULL);
+            result = r;
+        }];
+    }];
 
     [fm removeItemAtPath:extractDir error:nil];
 
-    // jbctl's install_app doesn't report status back to us here (same as
-    // install_pkg's fire-and-forget non-root path) -- re-check the app
-    // actually landed instead of trusting a blind success.
-    if (![fm fileExistsAtPath:targetPath]) {
-        return [NSError errorWithDomain:DOAppManagerErrorDomain code:-1 userInfo:@{
-            NSLocalizedDescriptionKey: @"Install didn't complete -- the app isn't at its expected path. Check that ldid/trust isn't required for this binary."
+    if (result != 0 || ![fm fileExistsAtPath:targetPath]) {
+        return [NSError errorWithDomain:DOAppManagerErrorDomain code:result userInfo:@{
+            NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Install didn't complete (step exited %d). Check that ldid/trust isn't required for this binary.", result]
         }];
     }
     return nil;
@@ -113,11 +147,18 @@ static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
 
 + (nullable NSError *)removeAppAtPath:(NSString *)bundlePath
 {
-    exec_cmd(JBROOT_PATH("/basebin/jbctl"), "internal", "remove_app", bundlePath.fileSystemRepresentation, NULL);
+    __block int result = -1;
+    DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
+    [envManager runAsRoot:^{
+        [envManager runUnsandboxed:^{
+            exec_cmd_trusted(JBROOT_PATH("/usr/bin/uicache"), "-u", bundlePath.fileSystemRepresentation, NULL);
+            result = exec_cmd_trusted(JBROOT_PATH("/usr/bin/rm"), "-rf", bundlePath.fileSystemRepresentation, NULL);
+        }];
+    }];
 
-    if ([[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
-        return [NSError errorWithDomain:DOAppManagerErrorDomain code:-1 userInfo:@{
-            NSLocalizedDescriptionKey: @"Remove didn't complete"
+    if (result != 0 || [[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
+        return [NSError errorWithDomain:DOAppManagerErrorDomain code:result userInfo:@{
+            NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Remove didn't complete (step exited %d)", result]
         }];
     }
     return nil;
