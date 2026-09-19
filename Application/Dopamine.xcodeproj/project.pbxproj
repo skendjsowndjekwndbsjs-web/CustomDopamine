@@ -141,6 +141,7 @@
 		8C56D4CB2B7C102B001C03D3 /* LICENSE_Zebra.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4C82B7C102B001C03D3 /* LICENSE_Zebra.md */; };
 		8C56D4CD2B7C118B001C03D3 /* LICENSE_kfd.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4CC2B7C118B001C03D3 /* LICENSE_kfd.md */; };
 		8C58E5592B7EAF8000E3ADAA /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C58E5582B7EAF8000E3ADAA /* CoreServices.framework */; };
+		13DE9C3ECFEF43A8954B6E75 /* MobileContainerManager.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 318B6080446142A385ADC466 /* MobileContainerManager.framework */; };
 		ED82A6B413A47486E377FF36 /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B128CEC922C2946A77740AD3 /* UniformTypeIdentifiers.framework */; };
 		8C5FA8D72BDD36B6008C246F /* weightBufs.h in Headers */ = {isa = PBXBuildFile; fileRef = 8C5FA8D62BDD36B6008C246F /* weightBufs.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8C5FA8DB2BDD36B6008C246F /* weightBufs.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8C5FA8D42BDD36B6008C246F /* weightBufs.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -577,6 +578,7 @@
 		8C56D4C82B7C102B001C03D3 /* LICENSE_Zebra.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_Zebra.md; sourceTree = "<group>"; };
 		8C56D4CC2B7C118B001C03D3 /* LICENSE_kfd.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_kfd.md; sourceTree = "<group>"; };
 		8C58E5582B7EAF8000E3ADAA /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
+		318B6080446142A385ADC466 /* MobileContainerManager.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileContainerManager.framework; path = System/Library/PrivateFrameworks/MobileContainerManager.framework; sourceTree = SDKROOT; };
 		B128CEC922C2946A77740AD3 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
 		8C5FA8D42BDD36B6008C246F /* weightBufs.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = weightBufs.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8C5FA8D62BDD36B6008C246F /* weightBufs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = weightBufs.h; sourceTree = "<group>"; };
@@ -811,6 +813,7 @@
 				042479E52B66B0DD0082581B /* Preferences.framework in Frameworks */,
 				8C029F662B4E2E970071DE58 /* libcompression.tbd in Frameworks */,
 				8C58E5592B7EAF8000E3ADAA /* CoreServices.framework in Frameworks */,
+				13DE9C3ECFEF43A8954B6E75 /* MobileContainerManager.framework in Frameworks */,
 				ED82A6B413A47486E377FF36 /* UniformTypeIdentifiers.framework in Frameworks */,
 				8CF3E8672F72DD9400931CA8 /* DarkSword.framework in Frameworks */,
 				8C4ABEB62B52094100B43C9B /* libjailbreak.dylib in Frameworks */,
@@ -1086,6 +1089,7 @@
 				8C5FA93F2BDD5039008C246F /* IOKit.framework */,
 				51AB98D92BBF44390042EA7B /* libpartial.a */,
 				8C58E5582B7EAF8000E3ADAA /* CoreServices.framework */,
+				318B6080446142A385ADC466 /* MobileContainerManager.framework */,
 				B128CEC922C2946A77740AD3 /* UniformTypeIdentifiers.framework */,
 				042479E42B66B0DD0082581B /* Preferences.framework */,
 				8CDD08372B4F682500A32B61 /* IOKit.framework */,

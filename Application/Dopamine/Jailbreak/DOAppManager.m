@@ -7,7 +7,19 @@
 #import "DOEnvironmentManager.h"
 #import <libjailbreak/util.h>
 #import <libjailbreak/jbclient_xpc.h>
+#import <CoreServices/LSApplicationWorkspace.h>
 #import <unistd.h>
+
+// MobileContainerManager is a private framework with no vendored header in
+// this project (unlike CoreServices/LSApplicationWorkspace.h, which BaseBin
+// already ships) -- declared here the same minimal way TrollStore's own
+// Shared/CoreServices.h does, since that's the only part actually used.
+@interface MCMContainer : NSObject
++ (id)containerWithIdentifier:(id)identifier createIfNecessary:(BOOL)createIfNecessary existed:(BOOL *)existed error:(NSError **)error;
+@property (nonatomic, readonly) NSURL *url;
+@end
+@interface MCMAppDataContainer : MCMContainer
+@end
 
 static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
 
@@ -86,6 +98,45 @@ static void trustAllMachOsInBundle(NSString *bundlePath)
             jbclient_trust_file_by_path(fullPath.fileSystemRepresentation);
         }
     }
+}
+
+// Builds the same registration dictionary TrollStore's own uicache
+// replacement (RootHelper/uicache.m, registerPath()) constructs before
+// calling registerApplicationDictionary: -- trimmed to the fields that
+// matter for a plain single-executable app (no App Groups, no PlugIns,
+// no entitlement-driven custom container id). Anything with those will
+// need that fuller logic ported too.
+static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString *bundleIdentifier, NSString *containerPath)
+{
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    dict[@"ApplicationType"] = @"User";
+    dict[@"CFBundleIdentifier"] = bundleIdentifier;
+    dict[@"CodeInfoIdentifier"] = bundleIdentifier;
+    dict[@"CompatibilityState"] = @0;
+    dict[@"IsContainerized"] = @YES;
+    if (containerPath) {
+        dict[@"Container"] = containerPath;
+        dict[@"EnvironmentVariables"] = @{
+            @"CFFIXED_USER_HOME": containerPath,
+            @"HOME": containerPath,
+            @"TMPDIR": [containerPath stringByAppendingPathComponent:@"tmp"],
+        };
+    }
+    dict[@"IsDeletable"] = @YES;
+    dict[@"Path"] = bundlePath;
+    // These three plus IsAdHocSigned are what TrollStore fills in for an
+    // app that isn't really Apple-signed -- LaunchServices just records
+    // them, it doesn't re-verify the signature against them.
+    dict[@"SignerOrganization"] = @"Apple Inc.";
+    dict[@"SignatureVersion"] = @132352;
+    dict[@"SignerIdentity"] = @"Apple iPhone OS Application Signing";
+    dict[@"IsAdHocSigned"] = @YES;
+    dict[@"LSInstallType"] = @1;
+    dict[@"HasMIDBasedSINF"] = @0;
+    dict[@"MissingSINF"] = @0;
+    dict[@"FamilyID"] = @0;
+    dict[@"IsOnDemandInstallCapable"] = @0;
+    return dict;
 }
 
 + (nullable NSError *)installIPAAtPath:(NSString *)path
@@ -172,13 +223,27 @@ static void trustAllMachOsInBundle(NSString *bundlePath)
                 return;
             }
 
-            // installd normally owns app bundles as mobile:mobile (501:501
-            // on every iOS version -- this has never changed).
-            recursiveChown(targetPath, 501, 501);
+            // installd owns app bundles as mobile:mobile -- that's uid/gid
+            // 33 on iOS, confirmed straight from TrollStore's own working
+            // fixPermissionsOfAppBundle(). (Previously used 501:501, which
+            // is the macOS convention, not iOS's -- one of the likely
+            // causes of the launch crash.)
+            recursiveChown(targetPath, 33, 33);
 
-            int r = exec_cmd_trusted(JBROOT_PATH("/usr/bin/uicache"), "-a", NULL);
-            if (r != 0) {
-                stepThatFailed = [NSString stringWithFormat:@"uicache (exit %d)", r];
+            // This is the actual mechanism TrollStore's own uicache
+            // replacement uses (RootHelper/uicache.m, registerPath()) --
+            // create a real data container via MobileContainerManager,
+            // then hand LaunchServices a full registration dictionary
+            // directly, in-process. This replaces a plain `uicache -a`
+            // shell-out, which registers the .app's *existence* but does
+            // nothing to give it a sandbox container -- almost certainly
+            // why the app crashed immediately on launch: it had nowhere
+            // to put Documents/Library/tmp.
+            MCMAppDataContainer *dataContainer = [MCMAppDataContainer containerWithIdentifier:bundleIdentifier createIfNecessary:YES existed:nil error:nil];
+            NSDictionary *registrationDict = buildRegistrationDictionary(targetPath, bundleIdentifier, dataContainer.url.path);
+            BOOL registered = [[LSApplicationWorkspace defaultWorkspace] registerApplicationDictionary:registrationDict];
+            if (!registered) {
+                stepThatFailed = @"registerApplicationDictionary";
                 return;
             }
             result = 0;
@@ -201,7 +266,7 @@ static void trustAllMachOsInBundle(NSString *bundlePath)
     DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
     [envManager runAsRoot:^{
         [envManager runUnsandboxed:^{
-            exec_cmd_trusted(JBROOT_PATH("/usr/bin/uicache"), "-u", bundlePath.fileSystemRepresentation, NULL);
+            [[LSApplicationWorkspace defaultWorkspace] unregisterApplication:[NSURL fileURLWithPath:bundlePath]];
             result = [[NSFileManager defaultManager] removeItemAtPath:bundlePath error:nil] ? 0 : -1;
         }];
     }];
