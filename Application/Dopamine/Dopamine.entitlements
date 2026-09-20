@@ -32,6 +32,35 @@
 		<string>Uninstall</string>
 		<string>UpdatePlaceholderMetadata</string>
 	</array>
+	<!-- Added for the custom .ipa installer: MCMAppContainer creation and
+	     registerApplicationDictionary: both check the CALLING process's own
+	     entitlements, not just its uid. Being root via the jailbreak's trust
+	     daemon changes credentials, not entitlements, so these have to be
+	     baked into this binary's own signature to actually work. This is
+	     the exact set (minus TrollStore's own app-switcher/shutdown-related
+	     ones, which are unrelated to installing apps) that TrollStore's own
+	     RootHelper carries in RootHelper/entitlements.plist for the same
+	     calls. -->
+	<key>com.apple.private.security.container-manager</key>
+	<true/>
+	<key>com.apple.private.MobileContainerManager.allowed</key>
+	<true/>
+	<key>com.apple.private.coreservices.canmaplsdatabase</key>
+	<true/>
+	<key>com.apple.lsapplicationworkspace.rebuildappdatabases</key>
+	<true/>
+	<key>com.apple.private.MobileInstallationHelperService.InstallDaemonOpsEnabled</key>
+	<true/>
+	<key>com.apple.private.MobileInstallationHelperService.allowed</key>
+	<true/>
+	<key>com.apple.private.uninstall.deletion</key>
+	<true/>
+	<key>com.apple.backboardd.launchapplications</key>
+	<true/>
+	<key>com.apple.frontboard.launchapplications</key>
+	<true/>
+	<key>com.apple.private.security.storage.MobileDocuments</key>
+	<true/>
 	<key>com.apple.security.exception.iokit-user-client-class</key>
 	<array>
 		<string>AGXDevice</string>
