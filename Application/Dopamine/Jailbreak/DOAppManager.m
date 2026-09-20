@@ -46,6 +46,12 @@ static void ensureMobileContainerManagerLoaded(void)
 @property (nonatomic, readonly) NSURL *url;
 @end
 
+// Also an extern data symbol from CoreServices.framework (already linked),
+// not declared in the vendored LSApplicationWorkspace.h -- same situation
+// as SecCode above. TrollStore's own Shared/CoreServices.h declares it the
+// same way.
+extern NSString *LSInstallTypeKey;
+
 static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
 
 static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
@@ -351,6 +357,17 @@ static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString 
     // only reaches the device through basebin.tar, extracted by the
     // jailbreak/bootstrap process, so a plain IPA reinstall wouldn't
     // redeploy it).
+    //
+    // This is the FULL port of TrollStore's installApp() (RootHelper/main.m),
+    // not just the piece that places a bundle: an existing container means
+    // update-in-place; a first install tries the same "system method" first
+    // -- a placeholder install via LSApplicationWorkspace, which routes the
+    // container creation through installd itself, in installd's own
+    // elevated/entitled context -- and only falls back to creating
+    // MCMAppContainer directly from this process if that fails. Creating
+    // it directly is what was failing before: this process has root via
+    // the jailbreak's own trust daemon, but that isn't the same as having
+    // installd's private container-management entitlements.
     __block int result = -1;
     __block NSString *stepThatFailed = nil;
     __block NSString *targetPath = nil;
@@ -360,38 +377,73 @@ static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString 
             NSFileManager *rootFm = [NSFileManager defaultManager];
             ensureMobileContainerManagerLoaded();
 
-            // This was the actual bug behind "needs to be updated" and
-            // TrollStore later refusing to touch the same app ("has the
-            // same identifier as a system app"): apps do NOT belong under
-            // JBROOT_PATH(/Applications/...) -- that's not a real iOS app
-            // location at all. TrollStore's own immutableAppBundleIdentifiers()
-            // check (RootHelper/main.m) treats ANY registered app whose
-            // path doesn't start with /private/var/containers as a system
-            // app, specifically to avoid bootlooping the device -- so an
-            // app installed at a jbroot path looks exactly like a system
-            // app collision to TrollStore, and apparently confuses
-            // SpringBoard/LaunchServices launch validation too. The real
-            // location is a proper MCMAppContainer, exactly like TrollStore
-            // creates via containerWithIdentifier: on MCMAppContainer (a
-            // different class than MCMAppDataContainer, which is only the
-            // *data* container for Documents/Library/tmp).
+            // Trust every Mach-O up front -- trusting by path only makes
+            // sense while extractedAppPath still exists, before anything
+            // moves or copies it.
+            trustAllMachOsInBundle(extractedAppPath);
+
             Class appContainerClass = NSClassFromString(@"MCMAppContainer");
-            MCMContainer *appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:YES existed:nil error:nil];
-            if (!appContainer.url) {
-                stepThatFailed = @"MCMAppContainer creation";
-                return;
+            MCMContainer *appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:NO existed:nil error:nil];
+
+            if (appContainer.url) {
+                // Update: an app with this identifier is already properly
+                // installed (real location, real container) -- just swap
+                // the .app inside it, same as TrollStore's installApp()
+                // "App update" branch.
+                for (NSString *entry in [rootFm contentsOfDirectoryAtPath:appContainer.url.path error:nil]) {
+                    if ([entry.pathExtension isEqualToString:@"app"]) {
+                        [rootFm removeItemAtPath:[appContainer.url.path stringByAppendingPathComponent:entry] error:nil];
+                        break;
+                    }
+                }
+            } else {
+                // Initial install. System method first: ask installd
+                // itself, via a placeholder LSApplicationWorkspace install,
+                // to create the container -- this is TrollStore's default,
+                // preferred path (RootHelper/main.m: "doing placeholder
+                // installation using LSApplicationWorkspace"). installApplication:
+                // consumes its input, so hand it a throwaway copy, exactly
+                // like TrollStore does, so extractDir/extractedAppPath
+                // survive for the fallback below if this doesn't work out.
+                NSString *lsPackageTmpCopy = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSUUID UUID].UUIDString];
+                [rootFm copyItemAtPath:extractDir toPath:lsPackageTmpCopy error:nil];
+
+                BOOL systemMethodOK = NO;
+                @try {
+                    systemMethodOK = [[LSApplicationWorkspace defaultWorkspace] installApplication:[NSURL fileURLWithPath:lsPackageTmpCopy] withOptions:@{
+                        LSInstallTypeKey: @1,
+                        @"PackageType": @"Placeholder",
+                    } error:nil];
+                } @catch (NSException *exception) {
+                    systemMethodOK = NO;
+                }
+                [rootFm removeItemAtPath:lsPackageTmpCopy error:nil];
+
+                if (systemMethodOK) {
+                    appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:NO existed:nil error:nil];
+                    // The placeholder creates a stub .app -- clear it
+                    // before copying the real one in.
+                    for (NSString *entry in [rootFm contentsOfDirectoryAtPath:appContainer.url.path error:nil]) {
+                        if ([entry.pathExtension isEqualToString:@"app"]) {
+                            [rootFm removeItemAtPath:[appContainer.url.path stringByAppendingPathComponent:entry] error:nil];
+                        }
+                    }
+                }
+
+                if (!appContainer.url) {
+                    // Custom method fallback (TrollStore: "doing custom
+                    // installation using MCMAppContainer") -- create the
+                    // container ourselves directly.
+                    appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:YES existed:nil error:nil];
+                }
+
+                if (!appContainer.url) {
+                    stepThatFailed = @"MCMAppContainer creation (both system and custom methods failed)";
+                    return;
+                }
             }
 
             targetPath = [appContainer.url.path stringByAppendingPathComponent:appName];
-
-            // Trust every Mach-O BEFORE moving -- trusting by path only
-            // makes sense while these exact paths still exist.
-            trustAllMachOsInBundle(extractedAppPath);
-
-            // Fine if nothing was there yet; this is the update case
-            // otherwise (TrollStore does the same removeItem-then-copy
-            // dance in installApp() when appContainer already existed).
-            [rootFm removeItemAtPath:targetPath error:nil];
 
             NSError *moveErr = nil;
             if (![rootFm moveItemAtPath:extractedAppPath toPath:targetPath error:&moveErr]) {
