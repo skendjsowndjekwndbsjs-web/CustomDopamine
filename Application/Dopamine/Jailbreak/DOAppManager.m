@@ -65,22 +65,29 @@ static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
 
 @implementation DOAppManager
 
+// We install real apps into the same standard location every other app on
+// the device uses (see installIPAAtPath below for why), which means they
+// sit alongside every App Store app too -- so tracking "which installed
+// apps did WE put there" needs its own small manifest, rather than being
+// able to tell just by where they live.
+static NSString *installManifestPath(void)
+{
+    return JBROOT_PATH(@"/var/mobile/Library/DopamineIPAInstalls.plist");
+}
+
 + (NSArray<DOAppInfo *> *)installedApps
 {
     NSMutableArray<DOAppInfo *> *result = [NSMutableArray new];
 
-    NSString *appsDir = JBROOT_PATH(@"/Applications");
-    NSArray<NSString *> *entries = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:appsDir error:nil];
-    for (NSString *entry in entries) {
-        if (![entry.pathExtension isEqualToString:@"app"]) continue;
-
-        NSString *bundlePath = [appsDir stringByAppendingPathComponent:entry];
+    NSDictionary<NSString *, NSString *> *manifest = [NSDictionary dictionaryWithContentsOfFile:installManifestPath()];
+    for (NSString *bundleIdentifier in manifest) {
+        NSString *bundlePath = manifest[bundleIdentifier];
         NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[bundlePath stringByAppendingPathComponent:@"Info.plist"]];
-        if (!infoPlist) continue;
+        if (!infoPlist) continue; // stale entry -- app dir is gone
 
         DOAppInfo *info = [DOAppInfo new];
-        info.bundleIdentifier = infoPlist[@"CFBundleIdentifier"] ?: entry;
-        info.displayName = infoPlist[@"CFBundleDisplayName"] ?: infoPlist[@"CFBundleName"] ?: entry;
+        info.bundleIdentifier = bundleIdentifier;
+        info.displayName = infoPlist[@"CFBundleDisplayName"] ?: infoPlist[@"CFBundleName"] ?: bundleIdentifier;
         info.version = infoPlist[@"CFBundleShortVersionString"] ?: infoPlist[@"CFBundleVersion"] ?: @"?";
         info.bundlePath = bundlePath;
         [result addObject:info];
@@ -331,45 +338,59 @@ static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString 
     NSString *extractedAppPath = [payloadDir stringByAppendingPathComponent:appName];
     NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[extractedAppPath stringByAppendingPathComponent:@"Info.plist"]];
     NSString *bundleIdentifier = infoPlist[@"CFBundleIdentifier"];
-
-    // If an app with the same bundle identifier is already installed
-    // (possibly under a differently-named folder, e.g. a resigned build),
-    // reuse its folder name so this is an update, not a duplicate icon.
-    NSString *targetFolderName = appName;
-    if (bundleIdentifier) {
-        for (DOAppInfo *existing in [self installedApps]) {
-            if ([existing.bundleIdentifier isEqualToString:bundleIdentifier]) {
-                targetFolderName = existing.bundlePath.lastPathComponent;
-                break;
-            }
-        }
+    if (!bundleIdentifier) {
+        [fm removeItemAtPath:extractDir error:nil];
+        return [NSError errorWithDomain:DOAppManagerErrorDomain code:-1 userInfo:@{
+            NSLocalizedDescriptionKey: @"The app's Info.plist has no CFBundleIdentifier"
+        }];
     }
-    NSString *targetPath = [JBROOT_PATH(@"/Applications") stringByAppendingPathComponent:targetFolderName];
 
-    // The move/chown/uicache step needs root. Do it in-process via
+    // The move/chown/register step needs root. Do it in-process via
     // runAsRoot/runUnsandboxed -- the same mechanism Respring/Reboot
     // Userspace already use -- instead of spawning /basebin/jbctl (which
     // only reaches the device through basebin.tar, extracted by the
     // jailbreak/bootstrap process, so a plain IPA reinstall wouldn't
     // redeploy it).
-    //
-    // The move and chown are done natively (NSFileManager + chown())
-    // rather than by shelling out to /usr/bin/mv & /usr/bin/chown --
-    // unlike uicache's path, which is copied from code already known to
-    // work elsewhere in this app, I had no verified bootstrap path for
-    // mv/chown and guessed wrong. Native calls have no such dependency.
     __block int result = -1;
     __block NSString *stepThatFailed = nil;
+    __block NSString *targetPath = nil;
     DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
     [envManager runAsRoot:^{
         [envManager runUnsandboxed:^{
             NSFileManager *rootFm = [NSFileManager defaultManager];
+            ensureMobileContainerManagerLoaded();
+
+            // This was the actual bug behind "needs to be updated" and
+            // TrollStore later refusing to touch the same app ("has the
+            // same identifier as a system app"): apps do NOT belong under
+            // JBROOT_PATH(/Applications/...) -- that's not a real iOS app
+            // location at all. TrollStore's own immutableAppBundleIdentifiers()
+            // check (RootHelper/main.m) treats ANY registered app whose
+            // path doesn't start with /private/var/containers as a system
+            // app, specifically to avoid bootlooping the device -- so an
+            // app installed at a jbroot path looks exactly like a system
+            // app collision to TrollStore, and apparently confuses
+            // SpringBoard/LaunchServices launch validation too. The real
+            // location is a proper MCMAppContainer, exactly like TrollStore
+            // creates via containerWithIdentifier: on MCMAppContainer (a
+            // different class than MCMAppDataContainer, which is only the
+            // *data* container for Documents/Library/tmp).
+            Class appContainerClass = NSClassFromString(@"MCMAppContainer");
+            MCMContainer *appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:YES existed:nil error:nil];
+            if (!appContainer.url) {
+                stepThatFailed = @"MCMAppContainer creation";
+                return;
+            }
+
+            targetPath = [appContainer.url.path stringByAppendingPathComponent:appName];
 
             // Trust every Mach-O BEFORE moving -- trusting by path only
             // makes sense while these exact paths still exist.
             trustAllMachOsInBundle(extractedAppPath);
 
-            // Fine if nothing was there yet (reinstall case).
+            // Fine if nothing was there yet; this is the update case
+            // otherwise (TrollStore does the same removeItem-then-copy
+            // dance in installApp() when appContainer already existed).
             [rootFm removeItemAtPath:targetPath error:nil];
 
             NSError *moveErr = nil;
@@ -380,9 +401,7 @@ static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString 
 
             // installd owns app bundles as mobile:mobile -- that's uid/gid
             // 33 on iOS, confirmed straight from TrollStore's own working
-            // fixPermissionsOfAppBundle(). (Previously used 501:501, which
-            // is the macOS convention, not iOS's -- one of the likely
-            // causes of the launch crash.)
+            // fixPermissionsOfAppBundle().
             recursiveChown(targetPath, 33, 33);
 
             // This is the actual mechanism TrollStore's own uicache
@@ -397,13 +416,18 @@ static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString 
                 stepThatFailed = @"registerApplicationDictionary";
                 return;
             }
+
+            NSMutableDictionary *manifest = [NSMutableDictionary dictionaryWithContentsOfFile:installManifestPath()] ?: [NSMutableDictionary new];
+            manifest[bundleIdentifier] = targetPath;
+            [manifest writeToFile:installManifestPath() atomically:YES];
+
             result = 0;
         }];
     }];
 
     [fm removeItemAtPath:extractDir error:nil];
 
-    if (result != 0 || ![fm fileExistsAtPath:targetPath]) {
+    if (result != 0 || !targetPath || ![fm fileExistsAtPath:targetPath]) {
         return [NSError errorWithDomain:DOAppManagerErrorDomain code:result userInfo:@{
             NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Install didn't complete -- failed at: %@", stepThatFailed ?: @"unknown step"]
         }];
@@ -411,20 +435,50 @@ static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString 
     return nil;
 }
 
-+ (nullable NSError *)removeAppAtPath:(NSString *)bundlePath
++ (nullable NSError *)removeAppWithBundleIdentifier:(NSString *)bundleIdentifier
 {
     __block int result = -1;
+    __block NSString *stepThatFailed = nil;
+    __block NSString *bundlePath = nil;
     DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
     [envManager runAsRoot:^{
         [envManager runUnsandboxed:^{
-            [[LSApplicationWorkspace defaultWorkspace] unregisterApplication:[NSURL fileURLWithPath:bundlePath]];
-            result = [[NSFileManager defaultManager] removeItemAtPath:bundlePath error:nil] ? 0 : -1;
+            ensureMobileContainerManagerLoaded();
+
+            Class appContainerClass = NSClassFromString(@"MCMAppContainer");
+            MCMContainer *appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:NO existed:nil error:nil];
+            if (!appContainer.url) {
+                stepThatFailed = @"app container not found";
+                return;
+            }
+
+            for (NSString *entry in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:appContainer.url.path error:nil]) {
+                if ([entry.pathExtension isEqualToString:@"app"]) {
+                    bundlePath = [appContainer.url.path stringByAppendingPathComponent:entry];
+                    break;
+                }
+            }
+
+            [[LSApplicationWorkspace defaultWorkspace] unregisterApplication:[NSURL fileURLWithPath:bundlePath ?: appContainer.url.path]];
+
+            // Remove the whole container, not just the .app inside it --
+            // matches how TrollStore's own uninstall cleans up (leaving an
+            // empty, orphaned MCMAppContainer behind is exactly what makes
+            // the *next* install of this identifier look, to a fresh
+            // containerWithIdentifier:createIfNecessary:NO check, like an
+            // existing app that needs updating in place rather than a
+            // clean first install).
+            result = [[NSFileManager defaultManager] removeItemAtPath:appContainer.url.path error:nil] ? 0 : -1;
+
+            NSMutableDictionary *manifest = [NSMutableDictionary dictionaryWithContentsOfFile:installManifestPath()] ?: [NSMutableDictionary new];
+            [manifest removeObjectForKey:bundleIdentifier];
+            [manifest writeToFile:installManifestPath() atomically:YES];
         }];
     }];
 
-    if (result != 0 || [[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
+    if (result != 0) {
         return [NSError errorWithDomain:DOAppManagerErrorDomain code:result userInfo:@{
-            NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Remove didn't complete (step exited %d)", result]
+            NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Remove didn't complete -- failed at: %@", stepThatFailed ?: @"unknown step"]
         }];
     }
     return nil;

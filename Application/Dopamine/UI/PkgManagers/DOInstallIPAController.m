@@ -42,7 +42,7 @@
         [appSpecifier setProperty:buttonHeight forKey:@"height"];
         [appSpecifier setProperty:@"app.badge" forKey:@"image"];
         [appSpecifier setProperty:@"appRowTapped:" forKey:@"action"];
-        [appSpecifier setProperty:app.bundlePath forKey:@"customAppBundlePath"];
+        [appSpecifier setProperty:app.bundleIdentifier forKey:@"customAppBundleIdentifier"];
         [specifiers addObject:appSpecifier];
     }
 
@@ -103,15 +103,15 @@
 
 - (void)appRowTapped:(PSSpecifier *)specifier
 {
-    NSString *bundlePath = [specifier propertyForKey:@"customAppBundlePath"];
-    if (!bundlePath) return;
+    NSString *bundleIdentifier = [specifier propertyForKey:@"customAppBundleIdentifier"];
+    if (!bundleIdentifier) return;
 
     UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Remove App"
-        message:[NSString stringWithFormat:@"Remove %@?", bundlePath.lastPathComponent]
+        message:[NSString stringWithFormat:@"Remove %@?", bundleIdentifier]
         preferredStyle:UIAlertControllerStyleAlert];
     [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     [confirm addAction:[UIAlertAction actionWithTitle:@"Remove" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-        NSError *removeError = [DOAppManager removeAppAtPath:bundlePath];
+        NSError *removeError = [DOAppManager removeAppWithBundleIdentifier:bundleIdentifier];
         if (removeError) {
             UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Remove Failed"
                 message:removeError.localizedDescription
