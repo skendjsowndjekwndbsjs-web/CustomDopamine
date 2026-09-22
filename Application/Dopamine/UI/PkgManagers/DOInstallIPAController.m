@@ -4,9 +4,12 @@
 //
 
 #import "DOInstallIPAController.h"
-#import "DOAppManager.h"
 #import "DOButtonCell.h"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+
+@interface DOInstallIPAController ()
+@property (nonatomic, strong) UIDocumentInteractionController *pendingInteractionController;
+@end
 
 @implementation DOInstallIPAController
 
@@ -30,27 +33,10 @@
     [installAppSpecifier setProperty:@"installAppButtonTapped" forKey:@"action"];
     [specifiers addObject:installAppSpecifier];
 
-    PSSpecifier *installedAppsGroupSpecifier = [PSSpecifier emptyGroupSpecifier];
-    installedAppsGroupSpecifier.name = @"Installed Apps";
-    [specifiers addObject:installedAppsGroupSpecifier];
-
-    NSArray<DOAppInfo *> *apps = [DOAppManager installedApps];
-    for (DOAppInfo *app in apps) {
-        PSSpecifier *appSpecifier = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:defSetter get:defGetter detail:nil cell:PSStaticTextCell edit:nil];
-        [appSpecifier setProperty:[NSString stringWithFormat:@"%@ (%@)", app.displayName, app.version] forKey:@"title"];
-        [appSpecifier setProperty:[DOButtonCell class] forKey:@"cellClass"];
-        [appSpecifier setProperty:buttonHeight forKey:@"height"];
-        [appSpecifier setProperty:@"app.badge" forKey:@"image"];
-        [appSpecifier setProperty:@"appRowTapped:" forKey:@"action"];
-        [appSpecifier setProperty:app.bundleIdentifier forKey:@"customAppBundleIdentifier"];
-        [specifiers addObject:appSpecifier];
-    }
-
-    if (apps.count == 0) {
-        PSSpecifier *emptyAppsSpecifier = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:defSetter get:defGetter detail:nil cell:PSStaticTextCell edit:nil];
-        [emptyAppsSpecifier setProperty:@"No apps installed" forKey:@"title"];
-        [specifiers addObject:emptyAppsSpecifier];
-    }
+    PSSpecifier *footerSpecifier = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:defSetter get:defGetter detail:nil cell:PSStaticTextCell edit:nil];
+    [footerSpecifier setProperty:@"Hands the file to TrollStore to install -- TrollStore must be installed." forKey:@"footerText"];
+    footerSpecifier.name = @"";
+    [specifiers addObject:footerSpecifier];
 
     _specifiers = specifiers;
     return _specifiers;
@@ -67,7 +53,7 @@
 {
 }
 
-#pragma mark - Install
+#pragma mark - Install (hand off to TrollStore)
 
 - (void)installAppButtonTapped
 {
@@ -81,49 +67,49 @@
 - (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls
 {
     if (urls.count == 0) return;
-    NSURL *url = urls.firstObject;
+    NSURL *pickedURL = urls.firstObject;
 
-    BOOL accessing = [url startAccessingSecurityScopedResource];
-    NSError *installError = [DOAppManager installIPAAtPath:url.path];
-    if (accessing) [url stopAccessingSecurityScopedResource];
+    BOOL accessing = [pickedURL startAccessingSecurityScopedResource];
 
-    if (installError) {
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Install Failed"
-            message:installError.localizedDescription
+    // Copy out of the document picker's security-scoped location into our
+    // own tmp -- UIDocumentInteractionController needs to hand this off to
+    // a different process (TrollStore), which can't reach into another
+    // app's security-scoped picker access.
+    NSString *localCopyPath = [NSTemporaryDirectory() stringByAppendingPathComponent:pickedURL.lastPathComponent];
+    [[NSFileManager defaultManager] removeItemAtPath:localCopyPath error:nil];
+    NSError *copyError = nil;
+    BOOL copied = [[NSFileManager defaultManager] copyItemAtURL:pickedURL toURL:[NSURL fileURLWithPath:localCopyPath] error:&copyError];
+
+    if (accessing) [pickedURL stopAccessingSecurityScopedResource];
+
+    if (!copied) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Couldn't Read File"
+            message:copyError.localizedDescription
             preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
         [self presentViewController:alert animated:YES completion:nil];
-    } else {
-        _specifiers = nil;
-        [self reloadSpecifiers];
+        return;
+    }
+
+    // Keep a strong reference -- UIDocumentInteractionController doesn't
+    // retain itself, and this method returns before the user picks
+    // anything from the sheet.
+    self.pendingInteractionController = [UIDocumentInteractionController interactionControllerWithURL:[NSURL fileURLWithPath:localCopyPath]];
+    self.pendingInteractionController.delegate = self;
+
+    BOOL presented = [self.pendingInteractionController presentOpenInMenuFromRect:CGRectZero inView:self.view animated:YES];
+    if (!presented) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"TrollStore Not Found"
+            message:@"No app on this device is registered to open .ipa files. Install TrollStore first."
+            preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
     }
 }
 
-#pragma mark - Remove
-
-- (void)appRowTapped:(PSSpecifier *)specifier
+- (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)controller
 {
-    NSString *bundleIdentifier = [specifier propertyForKey:@"customAppBundleIdentifier"];
-    if (!bundleIdentifier) return;
-
-    UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Remove App"
-        message:[NSString stringWithFormat:@"Remove %@?", bundleIdentifier]
-        preferredStyle:UIAlertControllerStyleAlert];
-    [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-    [confirm addAction:[UIAlertAction actionWithTitle:@"Remove" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-        NSError *removeError = [DOAppManager removeAppWithBundleIdentifier:bundleIdentifier];
-        if (removeError) {
-            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Remove Failed"
-                message:removeError.localizedDescription
-                preferredStyle:UIAlertControllerStyleAlert];
-            [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-            [self presentViewController:alert animated:YES completion:nil];
-        } else {
-            self->_specifiers = nil;
-            [self reloadSpecifiers];
-        }
-    }]];
-    [self presentViewController:confirm animated:YES completion:nil];
+    return self;
 }
 
 @end
