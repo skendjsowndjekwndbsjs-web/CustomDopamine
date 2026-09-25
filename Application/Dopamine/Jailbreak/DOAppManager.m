@@ -21,31 +21,22 @@ static NSString *installManifestPath(void)
     return JBROOT_PATH(@"/var/mobile/Library/DopamineIPAInstalls.plist");
 }
 
-// Copies the bundled helper binary (and libjailbreak.dylib, which it's
-// dynamically linked against via @loader_path -- it needs to sit right
-// next to the helper for that to resolve, since the helper isn't running
-// from inside Dopamine.app's own bundle once copied out) into a fresh
-// writable working directory, and marks both trusted.
+// Returns the path to the helper inside the app bundle, trusted and chmod'd
+// in-place. We do NOT copy it to a temp dir -- the helper links against
+// libjailbreak.dylib via @loader_path, and libjailbreak itself links against
+// libchoma.dylib, libxpf.dylib etc. the same way. All of those sit in
+// Dopamine.app/Frameworks/. The helper's rpath is built as
+// @executable_path/Frameworks (set in Application/Makefile), so when it runs
+// from inside the app bundle every transitive dylib dependency resolves
+// correctly. Copying to a temp dir only brings one dylib along, causing
+// dyld to SIGABRT (exit 6) when it can't find the rest.
 static NSString *stageHelper(void)
 {
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSString *workDir = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSUUID UUID].UUIDString];
-    [fm createDirectoryAtPath:workDir withIntermediateDirectories:YES attributes:nil error:nil];
-
-    NSString *helperSrc = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"DOAppInstallHelper"];
-    NSString *dylibSrc = [[NSBundle mainBundle].privateFrameworksPath stringByAppendingPathComponent:@"libjailbreak.dylib"];
-
-    NSString *helperDst = [workDir stringByAppendingPathComponent:@"DOAppInstallHelper"];
-    NSString *dylibDst = [workDir stringByAppendingPathComponent:@"libjailbreak.dylib"];
-
-    if (![fm copyItemAtPath:helperSrc toPath:helperDst error:nil]) return nil;
-    [fm copyItemAtPath:dylibSrc toPath:dylibDst error:nil];
-
-    chmod(helperDst.fileSystemRepresentation, 0755);
-    jbclient_trust_file_by_path(helperDst.fileSystemRepresentation);
-    jbclient_trust_file_by_path(dylibDst.fileSystemRepresentation);
-
-    return helperDst;
+    NSString *helperPath = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"DOAppInstallHelper"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:helperPath]) return nil;
+    chmod(helperPath.fileSystemRepresentation, 0755);
+    jbclient_trust_file_by_path(helperPath.fileSystemRepresentation);
+    return helperPath;
 }
 
 + (NSArray<DOAppInfo *> *)installedApps
