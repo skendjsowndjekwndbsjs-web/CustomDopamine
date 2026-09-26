@@ -70,57 +70,123 @@ static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
     }
 }
 
-// Trust every Mach-O binary in the bundle with the jailbreak's kernel trust
-// cache. On Dopamine the kernel is patched to accept any binary registered
-// via jbclient_trust_file_by_path -- this is the Dopamine-specific
-// replacement for TrollStore's CoreTrust bypass (TrollStore's bypass exists
-// because it has no kernel exploit; we do).
-// Sign + container-required-inject is handled by ldid if it's available
-// (installed via Procursus apt), which is the same tool TrollStore uses.
-// If it's not installed, the registration dictionary we build via
-// buildRegistrationDictionary already sets the Container path explicitly,
-// so the data container is set up correctly regardless.
-static void trustAllMachOsInBundle(NSString *bundlePath)
+// Full port of TrollStore Lite's signApp() -- the path used on
+// Dopamine-jailbroken devices. Does NOT use the CoreTrust bypass
+// (apply_coretrust_bypass / ChOma) -- that's TrollStore's workaround for
+// not having a kernel exploit. We use jbclient_trust_file_by_path instead.
+//
+// What this DOES do, which our previous approach missed:
+// 1. Injects container-required=<bundleId> entitlement per binary (makes
+//    the sandbox data container actually work; without it, the app has
+//    nowhere to write and shows "needs to be updated" on iOS 15 PMAP_CS)
+// 2. Injects jb.pmap_cs.custom_trust=PMAP_CS_APP_STORE (Dopamine 2.1.5+
+//    feature, required on iOS 15 PMAP_CS devices -- without it the binary
+//    runs at the wrong trust level and iOS rejects it at launch)
+// 3. Adds fallback entitlements when the main binary has none at all
+// 4. Signs each binary individually with ldid -S<entitlements.plist>
+// 5. Does a final recursive bundle sign with ldid -s
+// 6. Trusts every Mach-O via jbclient_trust_file_by_path (kernel cache)
+static int signAndTrustBundle(NSString *appPath, NSString *bundleId)
 {
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSDirectoryEnumerator<NSString *> *enumerator = [fm enumeratorAtPath:bundlePath];
-    for (NSString *relativePath in enumerator) {
-        NSString *fullPath = [bundlePath stringByAppendingPathComponent:relativePath];
-        NSDictionary *attrs = [fm attributesOfItemAtPath:fullPath error:nil];
-        if (![attrs[NSFileType] isEqualToString:NSFileTypeRegular]) continue;
+    NSString *ldidPath = JBROOT_PATH(@"/usr/bin/ldid");
+    BOOL ldidAvailable = [[NSFileManager defaultManager] fileExistsAtPath:ldidPath];
 
+    NSString *mainExecutablePath = nil;
+    NSDictionary *mainInfo = [NSDictionary dictionaryWithContentsOfFile:[appPath stringByAppendingPathComponent:@"Info.plist"]];
+    if (mainInfo[@"CFBundleExecutable"]) {
+        mainExecutablePath = [appPath stringByAppendingPathComponent:mainInfo[@"CFBundleExecutable"]];
+    }
+
+    if (ldidAvailable) {
+        // Per-binary entitlement injection (TrollStore signApp step 1)
+        NSDirectoryEnumerator<NSURL *> *enumerator = [[NSFileManager defaultManager]
+            enumeratorAtURL:[NSURL fileURLWithPath:appPath]
+            includingPropertiesForKeys:nil options:0 errorHandler:nil];
+        for (NSURL *fileURL in enumerator) {
+            NSString *filePath = fileURL.path;
+            if (![filePath.lastPathComponent isEqualToString:@"Info.plist"]) continue;
+
+            NSDictionary *infoDict = [NSDictionary dictionaryWithContentsOfFile:filePath];
+            if (!infoDict) continue;
+            NSString *thisBundleId = infoDict[@"CFBundleIdentifier"];
+            NSString *bundleExec = infoDict[@"CFBundleExecutable"];
+            NSString *packageType = infoDict[@"CFBundlePackageType"];
+            if (!thisBundleId || !bundleExec) continue;
+            if ([packageType isEqualToString:@"FMWK"]) continue;
+
+            NSString *execPath = [[filePath stringByDeletingLastPathComponent] stringByAppendingPathComponent:bundleExec];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:execPath]) continue;
+
+            NSMutableDictionary *ents = [dumpEntitlementsFromBinaryAtPath(execPath) mutableCopy];
+            if (!ents) ents = [NSMutableDictionary new];
+
+            // Fallback entitlements when the main binary has none at all
+            // (mirrors TrollStore's fallback block exactly)
+            if (ents.count == 0 && [execPath isEqualToString:mainExecutablePath]) {
+                ents = [@{
+                    @"application-identifier" : @"TROLLTROLL.*",
+                    @"com.apple.developer.team-identifier" : @"TROLLTROLL",
+                    @"get-task-allow" : @YES,
+                    @"keychain-access-groups" : @[@"TROLLTROLL.*", @"com.apple.token"],
+                } mutableCopy];
+            }
+
+            // container-required injection
+            NSObject *noContainerO = ents[@"com.apple.private.security.no-container"];
+            BOOL noContainer = [noContainerO isKindOfClass:[NSNumber class]] && [(NSNumber *)noContainerO boolValue];
+            NSObject *noSandboxO = ents[@"com.apple.private.security.no-sandbox"];
+            BOOL noSandbox = [noSandboxO isKindOfClass:[NSNumber class]] && [(NSNumber *)noSandboxO boolValue];
+            NSObject *containerRequiredO = ents[@"com.apple.private.security.container-required"];
+            BOOL containerRequired = !([containerRequiredO isKindOfClass:[NSNumber class]] &&
+                                       ![(NSNumber *)containerRequiredO boolValue]) &&
+                                     ![containerRequiredO isKindOfClass:[NSString class]];
+            if (containerRequired && !noContainer && !noSandbox) {
+                ents[@"com.apple.private.security.container-required"] = thisBundleId;
+            }
+
+            // PMAP_CS trust level -- THIS is what fixes "needs to be updated"
+            // on iOS 15 PMAP_CS devices (iPhone 7 Plus iOS 15.8.5).
+            // TrollStore Lite comment: "on PMAP_CS devices, we need to
+            // overwrite it so that the app runs as expected (Dopamine 2.1.5+)"
+            ents[@"jb.pmap_cs.custom_trust"] = @"PMAP_CS_APP_STORE";
+
+            // Write entitlements plist to tmp, sign with ldid -S<plist>
+            NSData *entsXML = [NSPropertyListSerialization dataWithPropertyList:ents format:NSPropertyListXMLFormat_v1_0 options:0 error:nil];
+            if (!entsXML) continue;
+            NSString *entsPath = [[NSTemporaryDirectory() stringByAppendingPathComponent:[NSUUID UUID].UUIDString] stringByAppendingPathExtension:@"plist"];
+            [entsXML writeToFile:entsPath atomically:NO];
+            NSString *signArg = [@"-S" stringByAppendingString:entsPath];
+            exec_cmd_trusted(ldidPath.fileSystemRepresentation, signArg.UTF8String, execPath.fileSystemRepresentation, NULL);
+            [[NSFileManager defaultManager] removeItemAtPath:entsPath error:nil];
+        }
+
+        // Final recursive bundle sign (ldid -s <appPath>)
+        exec_cmd_trusted(ldidPath.fileSystemRepresentation, "-s", appPath.fileSystemRepresentation, NULL);
+    }
+
+    // Trust every Mach-O via the jailbreak's kernel trust cache.
+    // This replaces TrollStore's apply_coretrust_bypass -- we have a kernel
+    // exploit so we don't need the CoreTrust bug.
+    NSDirectoryEnumerator<NSString *> *pathEnum = [[NSFileManager defaultManager] enumeratorAtPath:appPath];
+    for (NSString *relativePath in pathEnum) {
+        NSString *fullPath = [appPath stringByAppendingPathComponent:relativePath];
+        NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:fullPath error:nil];
+        if (![attrs[NSFileType] isEqualToString:NSFileTypeRegular]) continue;
         NSFileHandle *fh = [NSFileHandle fileHandleForReadingAtPath:fullPath];
         if (!fh) continue;
         NSData *header = [fh readDataOfLength:4];
         [fh closeFile];
         if (header.length < 4) continue;
-
         uint32_t magic;
         memcpy(&magic, header.bytes, 4);
-        BOOL isMachO = (magic == 0xfeedface || magic == 0xcefaedfe ||
-                        magic == 0xfeedfacf || magic == 0xcffaedfe ||
-                        magic == 0xcafebabe || magic == 0xbebafeca);
-        if (isMachO) {
+        if (magic == 0xfeedface || magic == 0xcefaedfe ||
+            magic == 0xfeedfacf || magic == 0xcffaedfe ||
+            magic == 0xcafebabe || magic == 0xbebafeca) {
             jbclient_trust_file_by_path(fullPath.fileSystemRepresentation);
         }
     }
-}
 
-// Run ldid to re-sign the app bundle ad-hoc and inject the
-// container-required entitlement, the same way TrollStore's signApp() does.
-// ldid is available in the Procursus bootstrap (apt install ldid).
-// If ldid is not installed we skip this step -- the kernel-level trust
-// (jbclient_trust_file_by_path above) handles AMFI acceptance; the only
-// thing we might lose is the container-required entitlement injection,
-// which the registration dictionary already compensates for.
-static void ldidSignIfAvailable(NSString *appPath)
-{
-    NSString *ldidPath = JBROOT_PATH(@"/usr/bin/ldid");
-    if (![[NSFileManager defaultManager] fileExistsAtPath:ldidPath]) {
-        NSLog(@"ldid not found at %@, skipping resign", ldidPath);
-        return;
-    }
-    exec_cmd_trusted(ldidPath.fileSystemRepresentation, "-s", appPath.fileSystemRepresentation, NULL);
+    return 0;
 }
 
 // --- Everything below is the same registerPath()/buildRegistrationDictionary
@@ -327,11 +393,10 @@ static int installIPA(NSString *ipaPath, NSString *resultOutputPath)
 
     ensureMobileContainerManagerLoaded();
 
-    // Trust every Mach-O BEFORE moving -- trusting by path only makes sense
-    // while extractedAppPath still exists. Then re-sign via ldid if available
-    // (same tool TrollStore uses, already in the Procursus bootstrap).
-    trustAllMachOsInBundle(extractedAppPath);
-    ldidSignIfAvailable(extractedAppPath);
+    // Sign every binary with the correct entitlements (container-required +
+    // jb.pmap_cs.custom_trust = PMAP_CS_APP_STORE) and trust via kernel
+    // cache -- BEFORE moving so paths are still valid.
+    signAndTrustBundle(extractedAppPath, bundleIdentifier);
 
     Class appContainerClass = NSClassFromString(@"MCMAppContainer");
     MCMContainer *appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:NO existed:nil error:nil];
