@@ -70,6 +70,10 @@ static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
     }
 }
 
+// Forward declaration -- defined later with the rest of the registration
+// helpers but needed here for signAndTrustBundle.
+static NSDictionary *dumpEntitlementsFromBinaryAtPath(NSString *binaryPath);
+
 // Full port of TrollStore Lite's signApp() -- the path used on
 // Dopamine-jailbroken devices. Does NOT use the CoreTrust bypass
 // (apply_coretrust_bypass / ChOma) -- that's TrollStore's workaround for
