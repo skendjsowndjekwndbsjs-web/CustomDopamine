@@ -102,7 +102,7 @@ static int runLdid(NSString *ldidPath, NSArray<NSString *> *args)
     NSUInteger argCount = argsM.count;
     char **argsC = (char **)malloc((argCount + 1) * sizeof(char *));
     for (NSUInteger i = 0; i < argCount; i++) {
-        argsC[i] = strdup(argsM[i].UTF8String);
+        argsC[i] = strdup([argsM[i] UTF8String]);
     }
     argsC[argCount] = NULL;
 
