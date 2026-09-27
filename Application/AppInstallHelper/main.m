@@ -33,6 +33,8 @@
 #import <libjailbreak/jbclient_xpc.h>
 #import <dlfcn.h>
 #import <sys/stat.h>
+#import <spawn.h>
+#import <sys/wait.h>
 
 // --- Same forward declarations needed: the public Security umbrella header
 // doesn't declare SecStaticCode/SecCode on iOS, and MobileContainerManager
@@ -90,10 +92,47 @@ static NSDictionary *dumpEntitlementsFromBinaryAtPath(NSString *binaryPath);
 // 4. Signs each binary individually with ldid -S<entitlements.plist>
 // 5. Does a final recursive bundle sign with ldid -s
 // 6. Trusts every Mach-O via jbclient_trust_file_by_path (kernel cache)
+// Mirrors TrollStore's own runLdid() -- posix_spawn so we control argv exactly,
+// same pattern TrollStore uses in RootHelper/main.m.
+static int runLdid(NSString *ldidPath, NSArray<NSString *> *args)
+{
+    NSMutableArray *argsM = [args mutableCopy];
+    [argsM insertObject:ldidPath.lastPathComponent atIndex:0];
+
+    NSUInteger argCount = argsM.count;
+    char **argsC = (char **)malloc((argCount + 1) * sizeof(char *));
+    for (NSUInteger i = 0; i < argCount; i++) {
+        argsC[i] = strdup(argsM[i].UTF8String);
+    }
+    argsC[argCount] = NULL;
+
+    pid_t pid;
+    int status = -1;
+    int spawnErr = posix_spawn(&pid, ldidPath.fileSystemRepresentation, NULL, NULL, argsC, NULL);
+    for (NSUInteger i = 0; i < argCount; i++) free(argsC[i]);
+    free(argsC);
+
+    if (spawnErr != 0) {
+        fprintf(stderr, "posix_spawn ldid failed: %d (%s)\n", spawnErr, strerror(spawnErr));
+        return spawnErr;
+    }
+    do { waitpid(pid, &status, 0); } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+}
+
 static int signAndTrustBundle(NSString *appPath, NSString *bundleId)
 {
-    NSString *ldidPath = JBROOT_PATH(@"/usr/bin/ldid");
+    // Use the ldid bundled inside Dopamine.app -- same as TrollStore bundles
+    // its own ldid rather than assuming it's installed in the bootstrap.
+    // TrollStore fetches this from https://github.com/opa334/ldid/releases
+    // and bundles it; we do the same via the CI workflow + Makefile.
+    NSString *ldidPath = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"ldid"];
     BOOL ldidAvailable = [[NSFileManager defaultManager] fileExistsAtPath:ldidPath];
+    if (ldidAvailable) {
+        // Trust the bundled ldid itself so AMFI allows us to exec it
+        jbclient_trust_file_by_path(ldidPath.fileSystemRepresentation);
+        chmod(ldidPath.fileSystemRepresentation, 0755);
+    }
 
     NSString *mainExecutablePath = nil;
     NSDictionary *mainInfo = [NSDictionary dictionaryWithContentsOfFile:[appPath stringByAppendingPathComponent:@"Info.plist"]];
@@ -160,12 +199,18 @@ static int signAndTrustBundle(NSString *appPath, NSString *bundleId)
             NSString *entsPath = [[NSTemporaryDirectory() stringByAppendingPathComponent:[NSUUID UUID].UUIDString] stringByAppendingPathExtension:@"plist"];
             [entsXML writeToFile:entsPath atomically:NO];
             NSString *signArg = [@"-S" stringByAppendingString:entsPath];
-            exec_cmd_trusted(ldidPath.fileSystemRepresentation, signArg.UTF8String, execPath.fileSystemRepresentation, NULL);
+            int ldidRet = runLdid(ldidPath, @[signArg, execPath]);
+            if (ldidRet != 0) {
+                fprintf(stderr, "ldid -S failed for %s (exit %d)\n", execPath.UTF8String, ldidRet);
+            }
             [[NSFileManager defaultManager] removeItemAtPath:entsPath error:nil];
         }
 
         // Final recursive bundle sign (ldid -s <appPath>)
-        exec_cmd_trusted(ldidPath.fileSystemRepresentation, "-s", appPath.fileSystemRepresentation, NULL);
+        int bundleSignRet = runLdid(ldidPath, @[@"-s", appPath]);
+        if (bundleSignRet != 0) {
+            fprintf(stderr, "ldid -s bundle sign failed (exit %d)\n", bundleSignRet);
+        }
     }
 
     // Trust every Mach-O via the jailbreak's kernel trust cache.

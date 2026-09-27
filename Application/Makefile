@@ -19,6 +19,7 @@ Dopamine.ipa: build/Build/Products/Debug-iphoneos/Dopamine.app AppInstallHelper/
 	ldid -SDopamine/Dopamine.entitlements build/Build/Products/Debug-iphoneos/Dopamine.app/Dopamine
 	ldid -s build/Build/Products/Debug-iphoneos/Dopamine.app
 	cp AppInstallHelper/DOAppInstallHelper build/Build/Products/Debug-iphoneos/Dopamine.app/DOAppInstallHelper
+	cp ldid_ios build/Build/Products/Debug-iphoneos/Dopamine.app/ldid
 	rm -rf Payload Dopamine.ipa
 	mkdir Payload
 	cp -r build/Build/Products/Debug-iphoneos/Dopamine.app Payload/Dopamine.app
