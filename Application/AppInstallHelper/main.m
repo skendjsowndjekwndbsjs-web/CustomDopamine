@@ -429,7 +429,63 @@ static NSDictionary *buildRegistrationDictionary(NSString *bundlePath, NSString 
     return dict;
 }
 
-// --- install / remove entry points ---
+// Port of TrollStore's applyPatchesToInfoDictionary()
+static void applyPatchesToInfoDictionary(NSString *appPath)
+{
+    NSString *infoPlistPath = [appPath stringByAppendingPathComponent:@"Info.plist"];
+    NSMutableDictionary *infoDict = [[NSDictionary dictionaryWithContentsOfFile:infoPlistPath] mutableCopy];
+    if (!infoDict) return;
+
+    // Enable notifications (TrollStore always sets this)
+    infoDict[@"SBAppUsesLocalNotifications"] = @1;
+
+    // Remove Apple system URL schemes the app might have claimed
+    NSArray *urlTypes = infoDict[@"CFBundleURLTypes"];
+    if ([urlTypes isKindOfClass:[NSArray class]]) {
+        // Build set of system schemes to strip (same list TrollStore uses internally)
+        NSSet *appleSchemes = [NSSet setWithObjects:
+            @"http", @"https", @"mailto", @"tel", @"facetime", @"facetime-audio",
+            @"maps", @"itms", @"itms-apps", @"itms-appss", @"itms-services",
+            @"apple-magnifier", @"apple-shortcut", @"shortcuts", @"workflow",
+            @"musics", @"music", @"videos", @"photos-redirect", @"shoebox",
+            @"dashboard", @"calshow", @"x-apple-calevent", @"contacts",
+            @"pref", @"prefs", @"clock", @"appleichat", @"ftp", @"gopher",
+            @"ipmessage", @"sms", @"xmpp", @"ms-excel", @"ms-word",
+            @"ms-powerpoint", @"ms-outlook", @"x-apple-reminders", nil];
+
+        NSMutableArray *cleanedURLTypes = [NSMutableArray new];
+        for (NSDictionary *urlType in urlTypes) {
+            if (![urlType isKindOfClass:[NSDictionary class]]) continue;
+            NSMutableDictionary *mutableURLType = [urlType mutableCopy];
+            NSArray *schemes = urlType[@"CFBundleURLSchemes"];
+            if ([schemes isKindOfClass:[NSArray class]]) {
+                NSMutableArray *cleanedSchemes = [NSMutableArray new];
+                for (NSString *scheme in schemes) {
+                    if ([scheme isKindOfClass:[NSString class]] &&
+                        ![appleSchemes containsObject:scheme.lowercaseString]) {
+                        [cleanedSchemes addObject:scheme];
+                    }
+                }
+                mutableURLType[@"CFBundleURLSchemes"] = cleanedSchemes.copy;
+            }
+            [cleanedURLTypes addObject:mutableURLType.copy];
+        }
+        infoDict[@"CFBundleURLTypes"] = cleanedURLTypes.copy;
+    }
+
+    [infoDict writeToFile:infoPlistPath atomically:YES];
+}
+
+// Find the .app bundle inside a container directory
+static NSString *findAppInContainer(NSString *containerPath)
+{
+    for (NSString *entry in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:containerPath error:nil]) {
+        if ([entry.pathExtension isEqualToString:@"app"]) {
+            return [containerPath stringByAppendingPathComponent:entry];
+        }
+    }
+    return nil;
+}
 
 static int installIPA(NSString *ipaPath, NSString *resultOutputPath)
 {
@@ -470,74 +526,104 @@ static int installIPA(NSString *ipaPath, NSString *resultOutputPath)
 
     ensureMobileContainerManagerLoaded();
 
-    // Sign every binary with the correct entitlements (container-required +
-    // jb.pmap_cs.custom_trust = PMAP_CS_APP_STORE) and trust via kernel
-    // cache -- BEFORE moving so paths are still valid.
+    // Step 1 (TrollStore order): patch Info.plist before signing
+    applyPatchesToInfoDictionary(extractedAppPath);
+
+    // Step 2: sign all binaries with ldid (inject jb.pmap_cs.custom_trust +
+    // container-required), then trust via kernel cache at the TMP path.
+    // TrollStore signs before placing -- CDHash is content-based so the
+    // trust cache entry survives the subsequent copy to the container.
     signAndTrustBundle(extractedAppPath, bundleIdentifier);
 
+    // Step 3: create/find the MCMAppContainer (TrollStore's same two-method
+    // approach: system placeholder first, direct MCM as fallback)
     Class appContainerClass = NSClassFromString(@"MCMAppContainer");
     MCMContainer *appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:NO existed:nil error:nil];
 
     if (appContainer.url) {
-        // Update: swap the .app inside the existing container.
-        for (NSString *entry in [fm contentsOfDirectoryAtPath:appContainer.url.path error:nil]) {
-            if ([entry.pathExtension isEqualToString:@"app"]) {
-                [fm removeItemAtPath:[appContainer.url.path stringByAppendingPathComponent:entry] error:nil];
-                break;
-            }
-        }
+        // Update: remove the existing .app bundle from the container.
+        NSString *existing = findAppInContainer(appContainer.url.path);
+        if (existing) [fm removeItemAtPath:existing error:nil];
     } else {
-        // Initial install. System method first -- ask installd itself, via
-        // a placeholder LSApplicationWorkspace install, to create the
-        // container (TrollStore's default, preferred path). installApplication:
-        // consumes its input, so hand it a throwaway copy.
+        // Initial install: try system method (placeholder via installd) first.
+        // LSApplicationWorkspace::installApplication: consumes its input, so
+        // give it a throwaway copy of the WHOLE IPA dir (not just the .app).
         NSString *lsPackageTmpCopy = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSUUID UUID].UUIDString];
         [fm copyItemAtPath:extractDir toPath:lsPackageTmpCopy error:nil];
 
         BOOL systemMethodOK = NO;
         @try {
-            systemMethodOK = [[LSApplicationWorkspace defaultWorkspace] installApplication:[NSURL fileURLWithPath:lsPackageTmpCopy] withOptions:@{
-                LSInstallTypeKey: @1,
-                @"PackageType": @"Placeholder",
-            } error:nil];
-        } @catch (NSException *exception) {
+            systemMethodOK = [[LSApplicationWorkspace defaultWorkspace]
+                installApplication:[NSURL fileURLWithPath:lsPackageTmpCopy]
+                withOptions:@{ LSInstallTypeKey: @1, @"PackageType": @"Placeholder" }
+                error:nil];
+        } @catch (NSException *e) {
             systemMethodOK = NO;
         }
         [fm removeItemAtPath:lsPackageTmpCopy error:nil];
 
         if (systemMethodOK) {
             appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:NO existed:nil error:nil];
-            for (NSString *entry in [fm contentsOfDirectoryAtPath:appContainer.url.path error:nil]) {
-                if ([entry.pathExtension isEqualToString:@"app"]) {
-                    [fm removeItemAtPath:[appContainer.url.path stringByAppendingPathComponent:entry] error:nil];
-                }
-            }
+            // Remove the placeholder .app the system method put there
+            NSString *placeholder = findAppInContainer(appContainer.url.path);
+            if (placeholder) [fm removeItemAtPath:placeholder error:nil];
         }
 
         if (!appContainer.url) {
-            // Custom method fallback -- create the container ourselves.
+            // Custom method fallback
             appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:YES existed:nil error:nil];
         }
 
         if (!appContainer.url) {
-            fprintf(stderr, "failed at: MCMAppContainer creation (both system and custom methods failed)\n");
+            fprintf(stderr, "failed at: MCMAppContainer (both methods failed)\n");
             [fm removeItemAtPath:extractDir error:nil];
             return 1;
         }
     }
 
+    // Step 4: COPY (not move) the signed .app into the container.
+    // TrollStore always copies; move would also work since CDHash is
+    // content-based, but copy matches TrollStore's exact behavior.
     NSString *targetPath = [appContainer.url.path stringByAppendingPathComponent:appName];
-
-    NSError *moveErr = nil;
-    if (![fm moveItemAtPath:extractedAppPath toPath:targetPath error:&moveErr]) {
-        fprintf(stderr, "failed at: move (%s)\n", moveErr.localizedDescription.UTF8String);
+    NSError *copyErr = nil;
+    if (![fm copyItemAtPath:extractedAppPath toPath:targetPath error:&copyErr]) {
+        fprintf(stderr, "failed at: copy (%s)\n", copyErr.localizedDescription.UTF8String);
         [fm removeItemAtPath:extractDir error:nil];
         return 1;
     }
 
-    fixPermissionsOfAppBundle(targetPath);
+    // Step 5: re-read the container URL after placement (TrollStore does this
+    // to get the authoritative final path, in case the system method reassigned
+    // the container UUID), then find the actual .app inside it.
+    appContainer = [appContainerClass containerWithIdentifier:bundleIdentifier createIfNecessary:NO existed:nil error:nil];
+    NSString *finalAppPath = findAppInContainer(appContainer.url.path) ?: targetPath;
 
-    NSDictionary *registrationDict = buildRegistrationDictionary(targetPath, bundleIdentifier);
+    // Step 6: fix permissions (TrollStore's two-pass chmod)
+    fixPermissionsOfAppBundle(finalAppPath);
+
+    // Step 7: trust every Mach-O at the FINAL path after placement+perms.
+    // Doing this again at the final path (instead of relying solely on the
+    // trust registered at the tmp path) ensures the kernel trust cache entry
+    // is live for the exact inode the OS will exec at launch time.
+    NSDirectoryEnumerator<NSString *> *pathEnum = [fm enumeratorAtPath:finalAppPath];
+    for (NSString *rel in pathEnum) {
+        NSString *full = [finalAppPath stringByAppendingPathComponent:rel];
+        NSDictionary *attrs = [fm attributesOfItemAtPath:full error:nil];
+        if (![attrs[NSFileType] isEqualToString:NSFileTypeRegular]) continue;
+        NSFileHandle *fh = [NSFileHandle fileHandleForReadingAtPath:full];
+        if (!fh) continue;
+        NSData *hdr = [fh readDataOfLength:4]; [fh closeFile];
+        if (hdr.length < 4) continue;
+        uint32_t magic; memcpy(&magic, hdr.bytes, 4);
+        if (magic == 0xfeedface || magic == 0xcefaedfe ||
+            magic == 0xfeedfacf || magic == 0xcffaedfe ||
+            magic == 0xcafebabe || magic == 0xbebafeca) {
+            jbclient_trust_file_by_path(full.fileSystemRepresentation);
+        }
+    }
+
+    // Step 8: register with LaunchServices
+    NSDictionary *registrationDict = buildRegistrationDictionary(finalAppPath, bundleIdentifier);
     BOOL registered = [[LSApplicationWorkspace defaultWorkspace] registerApplicationDictionary:registrationDict];
     [fm removeItemAtPath:extractDir error:nil];
 
@@ -546,9 +632,9 @@ static int installIPA(NSString *ipaPath, NSString *resultOutputPath)
         return 1;
     }
 
-    NSDictionary *resultDict = @{ @"BundleIdentifier": bundleIdentifier, @"Path": targetPath };
+    NSDictionary *resultDict = @{ @"BundleIdentifier": bundleIdentifier, @"Path": finalAppPath };
     [resultDict writeToFile:resultOutputPath atomically:YES];
-    printf("%s\n", targetPath.UTF8String);
+    printf("%s\n", finalAppPath.UTF8String);
     return 0;
 }
 
