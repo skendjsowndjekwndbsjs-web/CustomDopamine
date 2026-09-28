@@ -63,12 +63,40 @@ static void ensureMobileContainerManagerLoaded(void)
     });
 }
 
-static void recursiveChown(NSString *path, uid_t uid, gid_t gid)
+static void fixPermissionsOfAppBundle(NSString *appBundlePath)
 {
-    chown(path.fileSystemRepresentation, uid, gid);
-    NSDirectoryEnumerator<NSString *> *enumerator = [[NSFileManager defaultManager] enumeratorAtPath:path];
-    for (NSString *relativePath in enumerator) {
-        chown([path stringByAppendingPathComponent:relativePath].fileSystemRepresentation, uid, gid);
+    // Port of TrollStore's fixPermissionsOfAppBundle() -- two passes, same logic.
+    // Pass 1: set everything to 0644, owner mobile:mobile (33:33)
+    NSDirectoryEnumerator<NSURL *> *enumerator = [[NSFileManager defaultManager]
+        enumeratorAtURL:[NSURL fileURLWithPath:appBundlePath]
+        includingPropertiesForKeys:nil options:0 errorHandler:nil];
+    for (NSURL *fileURL in enumerator) {
+        chown(fileURL.path.fileSystemRepresentation, 33, 33);
+        chmod(fileURL.path.fileSystemRepresentation, 0644);
+    }
+
+    // Pass 2: set directories and Mach-O binaries to 0755 so they're executable
+    enumerator = [[NSFileManager defaultManager]
+        enumeratorAtURL:[NSURL fileURLWithPath:appBundlePath]
+        includingPropertiesForKeys:nil options:0 errorHandler:nil];
+    for (NSURL *fileURL in enumerator) {
+        NSString *filePath = fileURL.path;
+        BOOL isDir = NO;
+        [[NSFileManager defaultManager] fileExistsAtPath:filePath isDirectory:&isDir];
+        if (isDir) { chmod(filePath.fileSystemRepresentation, 0755); continue; }
+
+        NSFileHandle *fh = [NSFileHandle fileHandleForReadingAtPath:filePath];
+        if (!fh) continue;
+        NSData *header = [fh readDataOfLength:4];
+        [fh closeFile];
+        if (header.length < 4) continue;
+        uint32_t magic;
+        memcpy(&magic, header.bytes, 4);
+        if (magic == 0xfeedface || magic == 0xcefaedfe ||
+            magic == 0xfeedfacf || magic == 0xcffaedfe ||
+            magic == 0xcafebabe || magic == 0xbebafeca) {
+            chmod(filePath.fileSystemRepresentation, 0755);
+        }
     }
 }
 
@@ -507,7 +535,7 @@ static int installIPA(NSString *ipaPath, NSString *resultOutputPath)
         return 1;
     }
 
-    recursiveChown(targetPath, 33, 33);
+    fixPermissionsOfAppBundle(targetPath);
 
     NSDictionary *registrationDict = buildRegistrationDictionary(targetPath, bundleIdentifier);
     BOOL registered = [[LSApplicationWorkspace defaultWorkspace] registerApplicationDictionary:registrationDict];
