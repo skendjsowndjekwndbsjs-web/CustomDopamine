@@ -5,9 +5,9 @@
 
 #import "DOAppManager.h"
 #import "DOEnvironmentManager.h"
+#import <CoreServices/LSApplicationWorkspace.h>
+#import <CoreServices/LSApplicationProxy.h>
 #import <libjailbreak/util.h>
-#import <libjailbreak/jbclient_xpc.h>
-#import <sys/stat.h>
 
 static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
 
@@ -16,44 +16,77 @@ static NSString *const DOAppManagerErrorDomain = @"DOAppManagerErrorDomain";
 
 @implementation DOAppManager
 
-static NSString *installManifestPath(void)
+static NSString *manifestPath(void)
 {
     return JBROOT_PATH(@"/var/mobile/Library/DopamineIPAInstalls.plist");
 }
 
-// Returns the path to the helper inside the app bundle, trusted and chmod'd
-// in-place. We do NOT copy it to a temp dir -- the helper links against
-// libjailbreak.dylib via @loader_path, and libjailbreak itself links against
-// libchoma.dylib, libxpf.dylib etc. the same way. All of those sit in
-// Dopamine.app/Frameworks/. The helper's rpath is built as
-// @executable_path/Frameworks (set in Application/Makefile), so when it runs
-// from inside the app bundle every transitive dylib dependency resolves
-// correctly. Copying to a temp dir only brings one dylib along, causing
-// dyld to SIGABRT (exit 6) when it can't find the rest.
-static NSString *stageHelper(void)
++ (BOOL)isAppSyncInstalled
 {
-    NSString *helperPath = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"DOAppInstallHelper"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:helperPath]) return nil;
-    chmod(helperPath.fileSystemRepresentation, 0755);
-    jbclient_trust_file_by_path(helperPath.fileSystemRepresentation);
-    return helperPath;
+    // AppSync Unified installs its dylib here in the Procursus bootstrap
+    return [[NSFileManager defaultManager]
+        fileExistsAtPath:JBROOT_PATH(@"/Library/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib")];
+}
+
++ (void)installAppSyncWithCompletion:(void (^)(NSError *_Nullable error))completion
+{
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSString *debPath = [[NSBundle mainBundle].bundlePath
+            stringByAppendingPathComponent:@"AppSync.deb"];
+
+        if (![[NSFileManager defaultManager] fileExistsAtPath:debPath]) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion([NSError errorWithDomain:DOAppManagerErrorDomain code:-1 userInfo:@{
+                    NSLocalizedDescriptionKey: @"AppSync.deb not found in app bundle"
+                }]);
+            });
+            return;
+        }
+
+        __block int result = -1;
+        DOEnvironmentManager *env = [DOEnvironmentManager sharedManager];
+        [env runAsRoot:^{
+            [env runUnsandboxed:^{
+                // Same pattern DOPackageManager uses for dpkg -i
+                result = exec_cmd_trusted(
+                    JBROOT_PATH("/usr/bin/dpkg"),
+                    "-i", debPath.fileSystemRepresentation, NULL);
+            }];
+        }];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (result != 0) {
+                completion([NSError errorWithDomain:DOAppManagerErrorDomain code:result userInfo:@{
+                    NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                        @"dpkg exited %d installing AppSync Unified", result]
+                }]);
+            } else {
+                completion(nil);
+            }
+        });
+    });
 }
 
 + (NSArray<DOAppInfo *> *)installedApps
 {
     NSMutableArray<DOAppInfo *> *result = [NSMutableArray new];
+    NSDictionary<NSString *, NSString *> *manifest =
+        [NSDictionary dictionaryWithContentsOfFile:manifestPath()];
 
-    NSDictionary<NSString *, NSString *> *manifest = [NSDictionary dictionaryWithContentsOfFile:installManifestPath()];
-    for (NSString *bundleIdentifier in manifest) {
-        NSString *bundlePath = manifest[bundleIdentifier];
-        NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[bundlePath stringByAppendingPathComponent:@"Info.plist"]];
-        if (!infoPlist) continue; // stale entry -- app dir is gone
+    for (NSString *bundleId in manifest) {
+        // Ask LSApplicationWorkspace for live info instead of reading Info.plist
+        // ourselves -- covers the case where the OS updated the app name/version.
+        LSApplicationProxy *proxy = [LSApplicationProxy
+            applicationProxyForIdentifier:bundleId];
+        NSString *name = proxy.localizedName ?: bundleId;
+        NSString *version = proxy.bundleShortVersionString ?: proxy.bundleVersion ?: @"?";
+        NSString *path = proxy.bundleURL.path ?: manifest[bundleId];
 
         DOAppInfo *info = [DOAppInfo new];
-        info.bundleIdentifier = bundleIdentifier;
-        info.displayName = infoPlist[@"CFBundleDisplayName"] ?: infoPlist[@"CFBundleName"] ?: bundleIdentifier;
-        info.version = infoPlist[@"CFBundleShortVersionString"] ?: infoPlist[@"CFBundleVersion"] ?: @"?";
-        info.bundlePath = bundlePath;
+        info.bundleIdentifier = bundleId;
+        info.displayName = name;
+        info.version = version;
+        info.bundlePath = path;
         [result addObject:info];
     }
 
@@ -66,61 +99,66 @@ static NSString *stageHelper(void)
 
 + (nullable NSError *)installIPAAtPath:(NSString *)path
 {
-    NSString *resultPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSUUID UUID].UUIDString];
+    // Copy to a system-accessible tmp path so installd can read the file
+    // regardless of sandbox restrictions on our own container.
+    NSString *tmpPath = [@"/var/mobile/Media/Inbox/"
+        stringByAppendingPathComponent:[[NSUUID UUID].UUIDString
+            stringByAppendingPathExtension:@"ipa"]];
+    NSError *copyErr = nil;
+    if (![[NSFileManager defaultManager] copyItemAtPath:path toPath:tmpPath error:&copyErr]) {
+        return copyErr;
+    }
 
-    __block int result = -1;
-    DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
-    [envManager runAsRoot:^{
-        [envManager runUnsandboxed:^{
-            NSString *helperPath = stageHelper();
-            if (!helperPath) {
-                result = -1;
-                return;
-            }
-            result = exec_cmd(helperPath.fileSystemRepresentation, "install", path.fileSystemRepresentation, resultPath.fileSystemRepresentation, NULL);
-        }];
-    }];
+    NSError *installError = nil;
+    BOOL success = [[LSApplicationWorkspace defaultWorkspace]
+        installApplication:[NSURL fileURLWithPath:tmpPath]
+        withOptions:@{ @"PackageType": @"Customer" }
+        error:&installError];
 
-    NSDictionary *resultDict = [NSDictionary dictionaryWithContentsOfFile:resultPath];
-    [[NSFileManager defaultManager] removeItemAtPath:resultPath error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
 
-    if (result != 0 || !resultDict[@"Path"]) {
-        return [NSError errorWithDomain:DOAppManagerErrorDomain code:result userInfo:@{
-            NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Install helper exited %d -- check its stderr (spawned as root, so it won't show in this app's own logs)", result]
+    if (!success) {
+        return installError ?: [NSError errorWithDomain:DOAppManagerErrorDomain code:-1 userInfo:@{
+            NSLocalizedDescriptionKey: @"installApplication:withOptions:error: returned NO with no error object"
         }];
     }
 
-    NSMutableDictionary *manifest = [NSMutableDictionary dictionaryWithContentsOfFile:installManifestPath()] ?: [NSMutableDictionary new];
-    manifest[resultDict[@"BundleIdentifier"]] = resultDict[@"Path"];
-    [manifest writeToFile:installManifestPath() atomically:YES];
+    // Save to manifest so we can show what WE installed in the UI
+    // (LSApplicationWorkspace has all user apps; we only want to show ours)
+    NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:
+        [path stringByAppendingPathComponent:@"Info.plist"]];
+    NSString *bundleId = infoPlist[@"CFBundleIdentifier"];
+    if (bundleId) {
+        NSMutableDictionary *manifest =
+            [NSMutableDictionary dictionaryWithContentsOfFile:manifestPath()]
+            ?: [NSMutableDictionary new];
+        LSApplicationProxy *proxy = [LSApplicationProxy applicationProxyForIdentifier:bundleId];
+        manifest[bundleId] = proxy.bundleURL.path ?: @"";
+        [manifest writeToFile:manifestPath() atomically:YES];
+    }
 
     return nil;
 }
 
 + (nullable NSError *)removeAppWithBundleIdentifier:(NSString *)bundleIdentifier
 {
-    __block int result = -1;
-    DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
-    [envManager runAsRoot:^{
-        [envManager runUnsandboxed:^{
-            NSString *helperPath = stageHelper();
-            if (!helperPath) {
-                result = -1;
-                return;
-            }
-            result = exec_cmd(helperPath.fileSystemRepresentation, "remove", bundleIdentifier.fileSystemRepresentation, NULL);
-        }];
-    }];
+    BOOL success = [[LSApplicationWorkspace defaultWorkspace]
+        uninstallApplication:bundleIdentifier
+        withOptions:nil];
 
-    if (result != 0) {
-        return [NSError errorWithDomain:DOAppManagerErrorDomain code:result userInfo:@{
-            NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Remove helper exited %d", result]
+    if (!success) {
+        return [NSError errorWithDomain:DOAppManagerErrorDomain code:-1 userInfo:@{
+            NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                @"uninstallApplication: returned NO for %@", bundleIdentifier]
         }];
     }
 
-    NSMutableDictionary *manifest = [NSMutableDictionary dictionaryWithContentsOfFile:installManifestPath()] ?: [NSMutableDictionary new];
+    // Remove from our manifest
+    NSMutableDictionary *manifest =
+        [NSMutableDictionary dictionaryWithContentsOfFile:manifestPath()]
+        ?: [NSMutableDictionary new];
     [manifest removeObjectForKey:bundleIdentifier];
-    [manifest writeToFile:installManifestPath() atomically:YES];
+    [manifest writeToFile:manifestPath() atomically:YES];
 
     return nil;
 }

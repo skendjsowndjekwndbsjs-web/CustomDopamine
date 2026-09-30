@@ -39,6 +39,7 @@
 		04C246A12B73225800E17924 /* DODownloadViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 04C246A02B73225800E17924 /* DODownloadViewController.m */; };
 		04C246AE2B74ACA200E17924 /* DOAppSwitch.m in Sources */ = {isa = PBXBuildFile; fileRef = 04C246AD2B74ACA200E17924 /* DOAppSwitch.m */; };
 		04DD0B372B7BA6180055DE4F /* LICENSE.md in Resources */ = {isa = PBXBuildFile; fileRef = 04DD0B362B7BA6180055DE4F /* LICENSE.md */; };
+		85D7811D72BD446BB77A0B7F /* AppSync.deb in Resources */ = {isa = PBXBuildFile; fileRef = 728E019DECDE44EA8E459C51 /* AppSync.deb */; };
 		04DD0B3A2B7BF3E80055DE4F /* LICENSE_libc.md in Resources */ = {isa = PBXBuildFile; fileRef = 04DD0B392B7BF3E80055DE4F /* LICENSE_libc.md */; };
 		04DD0B3D2B7C88210055DE4F /* DOLogCrashViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 04DD0B3C2B7C88210055DE4F /* DOLogCrashViewController.m */; };
 		04DD0B402B7CBD3D0055DE4F /* Themes.plist in Resources */ = {isa = PBXBuildFile; fileRef = 04DD0B3F2B7CBD3D0055DE4F /* Themes.plist */; };
@@ -141,7 +142,6 @@
 		8C56D4CB2B7C102B001C03D3 /* LICENSE_Zebra.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4C82B7C102B001C03D3 /* LICENSE_Zebra.md */; };
 		8C56D4CD2B7C118B001C03D3 /* LICENSE_kfd.md in Resources */ = {isa = PBXBuildFile; fileRef = 8C56D4CC2B7C118B001C03D3 /* LICENSE_kfd.md */; };
 		8C58E5592B7EAF8000E3ADAA /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C58E5582B7EAF8000E3ADAA /* CoreServices.framework */; };
-		39241B656E97430E8F600749 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D76DE0B367DF4E5B9AB6591D /* Security.framework */; };
 		ED82A6B413A47486E377FF36 /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B128CEC922C2946A77740AD3 /* UniformTypeIdentifiers.framework */; };
 		8C5FA8D72BDD36B6008C246F /* weightBufs.h in Headers */ = {isa = PBXBuildFile; fileRef = 8C5FA8D62BDD36B6008C246F /* weightBufs.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8C5FA8DB2BDD36B6008C246F /* weightBufs.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8C5FA8D42BDD36B6008C246F /* weightBufs.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -467,6 +467,7 @@
 		04C246AC2B74ACA200E17924 /* DOAppSwitch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOAppSwitch.h; sourceTree = "<group>"; };
 		04C246AD2B74ACA200E17924 /* DOAppSwitch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOAppSwitch.m; sourceTree = "<group>"; };
 		04DD0B362B7BA6180055DE4F /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
+		728E019DECDE44EA8E459C51 /* AppSync.deb */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = AppSync.deb; sourceTree = "<group>"; };
 		04DD0B392B7BF3E80055DE4F /* LICENSE_libc.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_libc.md; sourceTree = "<group>"; };
 		04DD0B3B2B7C88210055DE4F /* DOLogCrashViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DOLogCrashViewController.h; sourceTree = "<group>"; };
 		04DD0B3C2B7C88210055DE4F /* DOLogCrashViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DOLogCrashViewController.m; sourceTree = "<group>"; };
@@ -578,7 +579,6 @@
 		8C56D4C82B7C102B001C03D3 /* LICENSE_Zebra.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_Zebra.md; sourceTree = "<group>"; };
 		8C56D4CC2B7C118B001C03D3 /* LICENSE_kfd.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE_kfd.md; sourceTree = "<group>"; };
 		8C58E5582B7EAF8000E3ADAA /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
-		D76DE0B367DF4E5B9AB6591D /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		B128CEC922C2946A77740AD3 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
 		8C5FA8D42BDD36B6008C246F /* weightBufs.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = weightBufs.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8C5FA8D62BDD36B6008C246F /* weightBufs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = weightBufs.h; sourceTree = "<group>"; };
@@ -813,7 +813,6 @@
 				042479E52B66B0DD0082581B /* Preferences.framework in Frameworks */,
 				8C029F662B4E2E970071DE58 /* libcompression.tbd in Frameworks */,
 				8C58E5592B7EAF8000E3ADAA /* CoreServices.framework in Frameworks */,
-				39241B656E97430E8F600749 /* Security.framework in Frameworks */,
 				ED82A6B413A47486E377FF36 /* UniformTypeIdentifiers.framework in Frameworks */,
 				8CF3E8672F72DD9400931CA8 /* DarkSword.framework in Frameworks */,
 				8C4ABEB62B52094100B43C9B /* libjailbreak.dylib in Frameworks */,
@@ -992,6 +991,7 @@
 			isa = PBXGroup;
 			children = (
 				04DD0B3F2B7CBD3D0055DE4F /* Themes.plist */,
+				728E019DECDE44EA8E459C51 /* AppSync.deb */,
 				04DD0B422B7CBE2E0055DE4F /* DOThemeManager.h */,
 				04DD0B432B7CBE2E0055DE4F /* DOThemeManager.m */,
 				04DD0B452B7CBEEA0055DE4F /* DOTheme.h */,
@@ -1089,7 +1089,6 @@
 				8C5FA93F2BDD5039008C246F /* IOKit.framework */,
 				51AB98D92BBF44390042EA7B /* libpartial.a */,
 				8C58E5582B7EAF8000E3ADAA /* CoreServices.framework */,
-				D76DE0B367DF4E5B9AB6591D /* Security.framework */,
 				B128CEC922C2946A77740AD3 /* UniformTypeIdentifiers.framework */,
 				042479E42B66B0DD0082581B /* Preferences.framework */,
 				8CDD08372B4F682500A32B61 /* IOKit.framework */,
@@ -1964,6 +1963,7 @@
 				8C5FF1CB301BAAF100BCA01F /* launchctl_1_1.2.0_iphoneos-arm64.deb in Resources */,
 				8C609C9F2C19B6FA0023DD12 /* libkrw-dopamine.deb in Resources */,
 				04DD0B372B7BA6180055DE4F /* LICENSE.md in Resources */,
+				85D7811D72BD446BB77A0B7F /* AppSync.deb in Resources */,
 				04DD0B3A2B7BF3E80055DE4F /* LICENSE_libc.md in Resources */,
 				8C56D4CD2B7C118B001C03D3 /* LICENSE_kfd.md in Resources */,
 				8C56D4BF2B7C0DF2001C03D3 /* LICENSE_ChOma.md in Resources */,

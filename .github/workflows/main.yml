@@ -72,11 +72,22 @@ jobs:
         run: |
           brew install libarchive
 
-      - name: Download ldid for iOS (arm64) and stage for bundling
+      - name: Download AppSync Unified for iOS 15 arm64
         run: |
           set -x
-          curl -L https://github.com/opa334/ldid/releases/latest/download/ldid -o Application/ldid_ios
-          chmod 755 Application/ldid_ios
+          # Fetch AppSync Unified from Karen's cydia repo (cydia.akemi.ai)
+          PKGS_URL="https://cydia.akemi.ai/Packages.gz"
+          APPSYNC_PATH=$(curl -sf "$PKGS_URL" | gzip -d 2>/dev/null | grep -A 30 "^Package: ai.akemi.appsyncunified$" | grep "^Filename:" | head -1 | awk '{print $2}')
+          if [ -n "$APPSYNC_PATH" ]; then
+            curl -L "https://cydia.akemi.ai/$APPSYNC_PATH" -o Application/Dopamine/Resources/AppSync.deb
+          else
+            # Fallback: fetch directly from AppSync GitHub releases
+            curl -sL https://api.github.com/repos/akemin-dayo/AppSync/releases/latest \
+              | grep "browser_download_url.*iphoneos-arm64.deb" \
+              | cut -d '"' -f 4 \
+              | xargs -I{} curl -L {} -o Application/Dopamine/Resources/AppSync.deb
+          fi
+          ls -la Application/Dopamine/Resources/AppSync.deb
 
       - name: Download Bootstrap
         run: |

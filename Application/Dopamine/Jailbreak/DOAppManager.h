@@ -2,17 +2,11 @@
 //  DOAppManager.h
 //  Dopamine
 //
-//  CustomDopamine: installs .ipa files fully inside this app -- no
-//  dependency on a separate installer app. The actual privileged work
-//  (MCMAppContainer, LSApplicationWorkspace) is TrollStore's own
-//  installApp()/registerPath() logic, ported wholesale into a standalone
-//  helper binary (Application/AppInstallHelper), signed at build time with
-//  an exact copy of TrollStore's own RootHelper entitlements -- because
-//  those private APIs check the CALLING PROCESS's own code-signature
-//  entitlements, not just its uid, which is why running the same calls
-//  from inside Dopamine.app's own (differently-entitled) process didn't
-//  work. This class just copies that helper out, trusts it, and spawns it
-//  from an already-root context.
+//  CustomDopamine: installs .ipa files via the standard installd path,
+//  patched by AppSync Unified to accept any signature. No custom helper,
+//  no MCMAppContainer calls, no ldid signing -- just
+//  LSApplicationWorkspace installApplication:withOptions:error:, the same
+//  call every jailbreak package manager uses once AppSync is installed.
 //
 
 #import <Foundation/Foundation.h>
@@ -28,12 +22,21 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DOAppManager : NSObject
 
-// Only lists apps this installer itself put on the device (tracked via its
-// own manifest) -- not every app on the device, which is what actually
-// lives at the same real container path now.
+// Returns YES if AppSync Unified's dylib is present in the bootstrap.
++ (BOOL)isAppSyncInstalled;
+
+// Installs the bundled AppSync Unified .deb via dpkg (needs jailbreak active).
+// Calls back on the main queue with an error or nil.
++ (void)installAppSyncWithCompletion:(void (^)(NSError *_Nullable error))completion;
+
+// Only apps this installer put on the device (tracked in our manifest).
 + (NSArray<DOAppInfo *> *)installedApps;
 
+// Installs .ipa via LSApplicationWorkspace (AppSync must be installed).
+// Blocking -- call off the main thread.
 + (nullable NSError *)installIPAAtPath:(NSString *)path;
+
+// Uninstalls via LSApplicationWorkspace.
 + (nullable NSError *)removeAppWithBundleIdentifier:(NSString *)bundleIdentifier;
 
 @end
